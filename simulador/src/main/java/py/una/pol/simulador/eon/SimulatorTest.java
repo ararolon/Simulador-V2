@@ -48,8 +48,8 @@ public class SimulatorTest {
         input.setTopologies(new ArrayList<>());
         //aca asigno las topologias que va a leer la entrada, lee un arraylist de topologias,acepta mas de uno
         //input.getTopologies().add(TopologiesEnum.NSFNET);
-        input.getTopologies().add(TopologiesEnum.USNET);
-        //input.getTopologies().add(TopologiesEnum.JPNNET);
+        //input.getTopologies().add(TopologiesEnum.USNET);
+        input.getTopologies().add(TopologiesEnum.JPNNET);
         input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
         input.setFsRangeMin(2);
