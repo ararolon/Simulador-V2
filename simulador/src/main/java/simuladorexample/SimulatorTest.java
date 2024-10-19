@@ -29,7 +29,9 @@ import py.una.pol.simulador.eon.utils.Utils;
 
 /**
  *
- * @author Néstor E. Reinoso Wood
+ * @author Néstor E. Reinoso Wood // Version base del simulador
+ * @author Aramy Rolon //V2 RSA 
+ * 
  */
 public class SimulatorTest {
 
@@ -45,8 +47,8 @@ public class SimulatorTest {
         input.setDemands(100000);
         input.setTopologies(new ArrayList<>());
         //aca asigno las topologias que va a leer la entrada, lee un arraylist de topologias,acepta mas de uno
-        input.getTopologies().add(TopologiesEnum.NSFNET);
-        //input.getTopologies().add(TopologiesEnum.USNET);
+        //input.getTopologies().add(TopologiesEnum.NSFNET);
+        input.getTopologies().add(TopologiesEnum.USNET);
         //input.getTopologies().add(TopologiesEnum.JPNNET);
         input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
@@ -56,13 +58,13 @@ public class SimulatorTest {
         input.setLambda(5);
         input.setErlang(erlang);
         input.setAlgorithms(new ArrayList<>());
-        //input.getAlgorithms().add(RSAEnum.CORE_UNICO);
+        //Siempre se va a usar el algoritmo con conmutacion de nucleos
         input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
         input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        // aca es donde se agrega el valor de la , y se va cambiando por fibra optica. 
+        // aca es donde se agrega el valor de la h, y se va cambiando por fibra optica. 
         input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
@@ -123,9 +125,7 @@ public class SimulatorTest {
 
                                     EstablishedRoute establishedRoute;
                                     switch (algorithm) {
-                                        case CORE_UNICO -> {
-                                            establishedRoute = Algorithms.ruteoCoreUnico(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
-                                        }
+
                                         case MULTIPLES_CORES -> {
                                             establishedRoute = Algorithms.ruteoCoreMultiple(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
                                         }

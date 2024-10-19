@@ -3,17 +3,16 @@ package py.una.pol.simulador.eon.models.enums;
 /**
  * Enumerator for the RSAs supported on the simulator
  *
- * @author Néstor E. Reinoso Wood
- */
-public enum RSAEnum {
+ * @author Néstor E. Reinoso Wood //Version base
+ * @author Aramy Rolon  /*V2 del simulador */
 
-    /**
-     * RSA sin conmutación de núcleos
-     */
-    CORE_UNICO("Core único", "ruteoCoreUnico"),
-    /**
-     * RSA con conmutación de núcleos
-     */
+/*
+  Se modifica la estrucutura , solamente se recibe la etiqueta de RSA con conmutacion de nucleos
+ */
+ public enum RSAEnum {
+
+    // RSA con conmutación de núcleos
+    
     MULTIPLES_CORES("Múltiples Cores", "ruteoCoreMultiple");
 
     private final String label;
