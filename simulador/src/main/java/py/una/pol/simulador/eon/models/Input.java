@@ -6,6 +6,7 @@ package py.una.pol.simulador.eon.models;
 
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.Data;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
@@ -68,8 +69,8 @@ public class Input {
     private BigDecimal maxCrosstalk;
     /**
      * Listado de Crosstalk por unidad de longitud (h) de las distintas fibras a
-     * simular
+     * simular ,
      */
-    private List<Double> crosstalkPerUnitLenghtList;
+    private List<Double> crosstalkPerUnitLenghtList; // el crosstalk por enlace
 
 }

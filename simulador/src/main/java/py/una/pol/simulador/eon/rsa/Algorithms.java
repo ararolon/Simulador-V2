@@ -30,7 +30,7 @@ public class Algorithms {
     private static BigDecimal CrosstalkMinCore =  BigDecimal.ZERO;
     //entre todos los cores candidatos , ir identificando cual tiene el crosstalk min , variable aux del indice
     private static int MinCoreIndex = 0;
-    private static List<BigDecimal> CrosstalkRutaporCore = new ArrayList<>() ;// auxiliar para guardar el crosstalk auxiliar del enlace de un core
+
 
     /**
      * Algoritmo RSA con conmutación de núcleos
@@ -40,8 +40,7 @@ public class Algorithms {
      * @param capacity Capacidad de la red
      * @param cores Cantidad total de núcleos
      * @param maxCrosstalk Máximo nivel de crosstalk permitido
-     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la
-     * fibra
+     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la fibra
      * @return Ruta establecida, o null si hay bloqueo
      */
     public static EstablishedRoute ruteoCoreMultiple(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
@@ -64,54 +63,55 @@ public class Algorithms {
             for (int i = 0; i < capacity - demand.getFs(); i++) { // porque hace saltos igual a la cantidad del valor de slots necesarios por demanda obtenido en demand.getFs
                 List<Link> enlacesLibres = new ArrayList<>(); //lista auxiliar de enlaces para la ruta del ksp recorrido
                 List<Integer> kspCores = new ArrayList<>();  // lista auxiliar de los nucleos aceptados para los enlaces establecidos
-                List<Integer> Coresaux = new ArrayList<>() ; // lista auxiliar donde se guardan los nucleos candidatos para elegir el min
-                List<BigDecimal> crosstalkFSList = new ArrayList<>(); // los slots con crosstlak (se va actualizando por demanda,core, es una lista auxiliar)
+                List<BigDecimal> crosstalkFSList; //Lista Auxiliar de Crosstalk que se asigna a la ruta por nucelo elegido 
+                crosstalkFSList = new ArrayList<>();  // los slots con crosstlak (se va actualizando por demanda,core, es una lista auxiliar)
+                  
                 for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {  
                     //Inicializa con el valor cero la lista , con BigDecimal para que sea mas preciso 
                     crosstalkFSList.add(BigDecimal.ZERO);
-
                 }
                 for (Link link : ksp.getEdgeList()) { //obtiene los enlaces de los camino que se esta analizando, iterando
+                    
+                   /* for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {  
+                        //Inicializa con el valor cero la lista , con BigDecimal para que sea mas preciso 
+                        crosstalkFSList.add(BigDecimal.ZERO);
+                    }  */
+
+                    // inicializo nuevamente ya que para cada enlace se debe ubicar la demanda.                   
+                    CrosstalkMinCore = BigDecimal.ZERO; // cambia por enlace
+                    //inicializa la variable que guarda el crosstalk del enlace por core
+                    
+                    List<BigDecimal> CrosstalkRutaporCore = new ArrayList<>() ;// auxiliar para guardar el crosstalk auxiliar del enlace de un core
+                   
+                    for (int aux = 0 ; aux<cores; aux++)
+                        CrosstalkRutaporCore.add(BigDecimal.ZERO); //aumenta tamanho , cambiar...
+                    
+                    List<Integer> Coresaux = new ArrayList<>() ; // lista auxiliar donde se guardan los nucleos candidatos para elegir el min
+
                     for (int core = 0; core < cores; core++) { // itera los nucleos del enlace
+                        // Para cada core debo inicializar mis auxiliar de crosstalk por Fs ???
+                       // crosstalkFSList = new ArrayList<>(); // los slots con crosstlak (se va actualizando por demanda,core, es una lista auxiliar)
+                       
                         if (i < capacity - demand.getFs()) { // si el indice que recorre todavia no salio de rango (por los saltos , para poder hacer le bloque)
                             /*Del core analizado , va a obtener la porcion de FS que necesita la demanda 
                             y verificar si esos FS estan libres y si el crosstalk es aceptable para establecer la demanda.*/ 
-                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());// obtiene la porcion de slots que necesita la demanda
-                            CrosstalkMinCore = BigDecimal.ZERO;
-                            //inicializa la variable que guarda el crosstalk del enlace por core
-                            for (int aux = 0 ; aux<cores; aux++)
-                                CrosstalkRutaporCore.add(BigDecimal.ZERO);
-                            
+                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());// obtiene la porcion de slots que necesita la demanda               
                             // Controla si está ocupado por una demanda
                             if (isFSBlockFree(bloqueFS)) {  //si se puede utilizar el bloque de slots, controla el crosstalk, pero si uno de ellos no se puede usar, pasa al siguiente core
                                 // Control de crosstalk
                                 if (isFsBlockCrosstalkFree(bloqueFS, maxCrosstalk, crosstalkFSList)) {
                                     if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
-                                        BigDecimal suma = BigDecimal.ZERO;//para ir sumando el crosstalk
-                                        enlacesLibres.add(link); //enlace libre de crosstalk, 
-                                        System.out.println("encuentra Core");
                                         Coresaux.add(core); //core aceptado 
-                                        //kspCores.add(core); //core aceptado (core candidato)
-                                        //fsIndexBegin = i;//guarda el indice desde donde va a empezar el bloque fs  
-                                        //selectedIndex = k; // el indice del camino seleccionado
+                
                                         for (int crosstalkFsListIndex = 0; crosstalkFsListIndex < crosstalkFSList.size(); crosstalkFsListIndex++) {
                                             BigDecimal crosstalkRuta = crosstalkFSList.get(crosstalkFsListIndex);
                                             crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance()))); //auxiliar
-                                            suma = suma.add(crosstalkRuta); //suma del crosstalk (Suma de dos variables Big decimal)
                                             crosstalkFSList.set(crosstalkFsListIndex, crosstalkRuta); // Calcular el crosstalk real sobre el FS y asigna en la lista de los valores de crosstalk de los fs
                                         
                                         }
+                                        
                                         //para el core n se obtiene el crosstalk en la ruta que es igual a el valor en la variable suma
-                                        CrosstalkRutaporCore.set(core,suma);//en la lista , asigna el crosstalk total del enlace por core
-
-                                        //core = cores; // para que salga del ciclo porque toma el primer core en el cual encuentra bloques de Fs libres y que puedan llevar la demanda.
-                                        // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
-                                        /*  if (enlacesLibres.size() == ksp.getEdgeList().size()) {
-                                            kspPlaced.add(kspaths.get(selectedIndex));
-                                            kspPlacedCores.add(kspCores);
-                                            k = kspaths.size(); //para que salga del bucle, al encontrar la ruta
-                                            i = capacity;
-                                        }*/
+                                        CrosstalkRutaporCore.set(core,Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance())));//en la lista , asigna el crosstalk total del enlace por core
                                     }
                                 }
 
@@ -123,6 +123,9 @@ public class Algorithms {
                     if(!Coresaux.isEmpty()){
                         // se obtiene el core min para elegir
                         for(int c = 0; c < Coresaux.size(); c++ ){
+                            //convierte a double el valor para imprimir
+                            //System.out.printf("Se analiza el core : %d con el crosstalk igual a %.3f\n",c,CrosstalkRutaporCore.get(c).doubleValue());
+                            
                             if(c == 0){
                                 CrosstalkMinCore = CrosstalkRutaporCore.get(c);
                                 MinCoreIndex = c;
@@ -133,12 +136,21 @@ public class Algorithms {
                                 MinCoreIndex = c;
                             }
                         }
+                        
+                       // System.out.printf("Eligio el c:%d y XT:%.3f\n",MinCoreIndex, CrosstalkMinCore.doubleValue());
+
+                        enlacesLibres.add(link); //enlace libre de crosstalk, 
+                        
+
                         kspCores.add(MinCoreIndex); //Se agrega el core min a la lista de los cores aceptados para la ruta
                         fsIndexBegin = i;  // el indice donde empiezan los bloques de FS
                         selectedIndex = k; //se guarda el camino escogido
-                        System.out.printf ("\nse imprime k : %d\n",k);
                         // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
+                        
+                        //Luego de seleccionar cual sera el nucleo utilizado, se asigna el crosstalk a sus FS
+                       
                         if (enlacesLibres.size() == ksp.getEdgeList().size()) {
+                            System.out.printf("La ruta se establece cuando hay %d enlaces\n",ksp.getEdgeList().size());
                             kspPlaced.add(kspaths.get(selectedIndex));
                             kspPlacedCores.add(kspCores);
                             k = kspaths.size(); //para que salga del bucle, al encontrar la ruta, va a utilizar la primera ruta candidata
@@ -178,16 +190,12 @@ public class Algorithms {
         }
         return true;
     }
-    //verificar si esta funcion se usa 
-    private static Boolean isCrosstalkFree(FrequencySlot fs, BigDecimal maxCrosstalk, BigDecimal crosstalkRuta) {
-        BigDecimal crosstalkActual = crosstalkRuta.add(fs.getCrosstalk());
-        return crosstalkActual.compareTo(maxCrosstalk) <= 0;
-    }
+
 
     /**
      * Analiza un bloque de slots , si esta libre del crosstalk maximo tolerado.
      @param fss es el bloque de FS que utilizara la demanda
-     @param maxCrosstalk es el crosstalk maximo tolerado 
+     @param maxCrosstalk es el crosstalk maximo tolerado  -25 db
      @param crosstalkRuta es una lista auxiliar donde se almacena el crosstalk de cada fs del enlace.
      @return booleano true, false si es que se cumple que todos los fs tienen crosstalk menor al crosstalk maximo 
      */ 
@@ -225,7 +233,7 @@ public class Algorithms {
                     BigDecimal crosstalkASumar = Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance()));
                     BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkASumar); // variable auxiliar para comparar con el crosstalk maximo, ademas le asigna al fs vecino , el crosstalk que genera
                     if (crosstalk.compareTo(maxCrosstalk) >= 0) { //compara con el valor maximo tolerado, si es mayor o igual , bloqueo
-                        return false; //nsi encuentra que en alguno de los cores hay un fs que supera el crosstalk , ya se rechaza
+                        return false; //si encuentra que en alguno de los cores hay un fs que supera el crosstalk , ya se rechaza
                     }
                 }
             }
