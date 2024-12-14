@@ -82,6 +82,7 @@ public class Algorithms {
                                         core = cores; // para que salga del ciclo porque toma el primer core en el cual encuentra bloques de Fs libres y que puedan llevar la demanda.
                                         // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
                                         if (enlacesLibres.size() == ksp.getEdgeList().size()) {
+                                            System.out.printf("\n La ruta establece con %d enlaces",ksp.getEdgeList().size());
                                             kspPlaced.add(kspaths.get(selectedIndex));
                                             kspPlacedCores.add(kspCores);
                                             k = kspaths.size(); //para que salga del bucle, al encontrar la ruta

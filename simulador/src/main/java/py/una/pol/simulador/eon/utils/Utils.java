@@ -91,12 +91,14 @@ public class Utils {
             Integer fsMin, Integer fsMax, Integer cantNodos, Integer HT, Integer demandId, Integer insertionTime) {
         List<Demand> demands = new ArrayList<>();
         Random rand;
+        //genera cantidad de demandas indicada por lambda, que significa la cantidad de demandas por unidad de tiempo
         Integer demandasQuantity = MathUtils.poisson(lambda);
         for (Integer j = demandId; j < demandasQuantity + demandId; j++) {
             rand = new Random();
             Integer source = rand.nextInt(cantNodos);
             Integer destination = rand.nextInt(cantNodos);
             Integer fs = (int) (Math.random() * (fsMax - fsMin + 1)) + fsMin;
+            //no se permiten rutas ciclicas, nodo destino distinto a nodo inicial
             while (source.equals(destination)) {
                 destination = rand.nextInt(cantNodos);
             }
@@ -177,6 +179,7 @@ public class Utils {
                         //estaApplications and Development of Multi-Core Optical FibersblishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk().add(crosstalkDB));
 
                         BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
+                        //le suma el crosstalk obtenido , con el crosstalk que ya se encuentra en el Fs
                         graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.add(crosstalkDB));
                         //System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());
                     }
@@ -207,8 +210,10 @@ public class Utils {
                     if (!core.equals(coreIndex) && coreVecinos.contains(coreIndex)) {
                         double crosstalk = XT(getCantidadVecinos(coreIndex), crosstalkPerUnitLength, establishedRoute.getPath().get(j).getDistance());
                         BigDecimal crosstalkDB = toDB(crosstalk);
+                        //sustrae el crosstalk generado por los vecinos de la variable donde se guarda la conexion establecida
                         establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk().subtract(crosstalkDB));
 
+                        //sustrae el crosstalk generado por los vecinos del crosstalk de la red 
                         BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
                         graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.subtract(crosstalkDB));
                         //System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());

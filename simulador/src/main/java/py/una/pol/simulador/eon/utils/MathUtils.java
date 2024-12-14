@@ -43,7 +43,7 @@ public class MathUtils {
         Double s, a, aux, auxB, auxHT;
         Double e = Math.E;
         a = (Math.random() * 1) + 0;
-        b = 1D;
+        b = 1D; // asigna a la variable el valor 1 como Double
         auxB = (double) b;
         auxHT = (double) ht;
         aux = (-1) * (auxB / auxHT);

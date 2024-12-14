@@ -44,31 +44,39 @@ public class SimulatorTest {
     private Input getTestingInput(Integer erlang) {
         Input input = new Input();
 
-        input.setDemands(100000);
+        input.setDemands(100000); // total de demandas para la red
         input.setTopologies(new ArrayList<>());
         //aca asigno las topologias que va a leer la entrada, lee un arraylist de topologias,acepta mas de uno
-        //input.getTopologies().add(TopologiesEnum.NSFNET);
+        input.getTopologies().add(TopologiesEnum.NSFNET);
         //input.getTopologies().add(TopologiesEnum.USNET);
-        input.getTopologies().add(TopologiesEnum.JPNNET);
-        input.setFsWidth(new BigDecimal("12.5"));
+        //input.getTopologies().add(TopologiesEnum.JPNNET);
+        input.setFsWidth(new BigDecimal("12.5")); // la frecuencia de cada ranura
         input.setFsRangeMax(8);
         input.setFsRangeMin(2);
-        input.setCapacity(320);
+        input.setCapacity(20);
         input.setCores(7);
-        input.setLambda(5);
+        input.setLambda(5); // demandas que ingresan por unidad de tiempo
         input.setErlang(erlang);
         input.setAlgorithms(new ArrayList<>());
         //Siempre se va a usar el algoritmo con conmutacion de nucleos
         input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
+        // se obtiene el tiempo de simulacion usando la cantidad de demandas por la cantidad de demanda que entra x unidad de tiempo
         input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        // aca es donde se agrega el valor de la h, y se va cambiando por fibra optica. 
-        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+
+        /*  Aca es donde se agrega el valor de la h, y se va cambiando por fibra optica
+         *  Se tiene en cuenta el coeficiente de acoplamiento , radio de curvatura, constante de propagacion
+         *  distancia entre los nucleos
+         * 
+         *  hij = (2*k^2*r)/(B*Ʌij)
+        */
+        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
+        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
         return input;
+
     }
 
     /**
@@ -141,7 +149,7 @@ public class SimulatorTest {
                                         insertData(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
                                         bloqueos++;
                                     } else {
-                                        System.out.println("Ruta establecida"); //comentar
+                                        //System.out.println("Ruta establecida"); //comentar
                                         //System.out.println("Cores: " + establishedRoute.getPathCores());
                                         AssignFsResponse response = Utils.assignFs(graph, establishedRoute, crosstalkPerUnitLength);
                                         establishedRoute = response.getRoute();
