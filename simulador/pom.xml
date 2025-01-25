@@ -18,7 +18,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.28</version>
+            <version>1.18.24</version>
             <scope>provided</scope>
         </dependency>
         
@@ -95,7 +95,6 @@
                     <source>17</source>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 </project>

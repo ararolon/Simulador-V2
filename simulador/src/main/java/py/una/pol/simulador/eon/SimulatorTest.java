@@ -23,15 +23,12 @@ import py.una.pol.simulador.eon.models.Link;
 import py.una.pol.simulador.eon.models.enums.RSAEnum;
 import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.rsa.Algorithms;
-import py.una.pol.simulador.eon.utils.GraphUtils;
 import py.una.pol.simulador.eon.utils.MathUtils;
 import py.una.pol.simulador.eon.utils.Utils;
 
 /**
  *
- * @author Néstor E. Reinoso Wood // Version base del simulador
- * @author Aramy Rolon //V2 RSA 
- * 
+ * @author Néstor E. Reinoso Wood
  */
 public class SimulatorTest {
 
@@ -44,39 +41,29 @@ public class SimulatorTest {
     private Input getTestingInput(Integer erlang) {
         Input input = new Input();
 
-        input.setDemands(100000); // total de demandas para la red
+        input.setDemands(100000);
         input.setTopologies(new ArrayList<>());
-        //aca asigno las topologias que va a leer la entrada, lee un arraylist de topologias,acepta mas de uno
         input.getTopologies().add(TopologiesEnum.NSFNET);
         //input.getTopologies().add(TopologiesEnum.USNET);
         //input.getTopologies().add(TopologiesEnum.JPNNET);
-        input.setFsWidth(new BigDecimal("12.5")); // la frecuencia de cada ranura
+        input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
         input.setFsRangeMin(2);
-        input.setCapacity(20);
+        input.setCapacity(320);
         input.setCores(7);
-        input.setLambda(5); // demandas que ingresan por unidad de tiempo
+        input.setLambda(5);
         input.setErlang(erlang);
         input.setAlgorithms(new ArrayList<>());
-        //Siempre se va a usar el algoritmo con conmutacion de nucleos
+        //input.getAlgorithms().add(RSAEnum.CORE_UNICO);
         input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
-        // se obtiene el tiempo de simulacion usando la cantidad de demandas por la cantidad de demanda que entra x unidad de tiempo
         input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-
-        /*  Aca es donde se agrega el valor de la h, y se va cambiando por fibra optica
-         *  Se tiene en cuenta el coeficiente de acoplamiento , radio de curvatura, constante de propagacion
-         *  distancia entre los nucleos
-         * 
-         *  hij = (2*k^2*r)/(B*Ʌij)
-        */
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
         input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
         return input;
-
     }
 
     /**
@@ -97,7 +84,7 @@ public class SimulatorTest {
                     Graph<Integer, Link> graph = Utils.createTopology(topology,
                             input.getCores(), input.getFsWidth(), input.getCapacity());
 
-                    GraphUtils.createImage(graph, topology.label());
+                    //GraphUtils.createImage(graph, topology.label());
                     // Contador de demandas utilizado para identificación
                     Integer demandsQ = 1;
                     List<List<Demand>> listaDemandas = new ArrayList<>();
@@ -119,6 +106,7 @@ public class SimulatorTest {
                             List<EstablishedRoute> establishedRoutes = new ArrayList<>();
                             System.out.println("Inicializando simulación del RSA " + algorithm.label() + " para erlang: " + (erlang) + " para la topología " + topology.label() + " y H = " + crosstalkPerUnitLength.toString());
                             int demandaNumero = 1;
+                            int rutas = 0;
                             int bloqueos = 0;
                             // Iteración de unidades de tiempo
                             for (int i = 0; i < input.getSimulationTime(); i++) {
@@ -133,7 +121,9 @@ public class SimulatorTest {
 
                                     EstablishedRoute establishedRoute;
                                     switch (algorithm) {
-
+                                        case CORE_UNICO -> {
+                                            establishedRoute = Algorithms.ruteoCoreUnico(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
+                                        }
                                         case MULTIPLES_CORES -> {
                                             establishedRoute = Algorithms.ruteoCoreMultiple(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
                                         }
@@ -144,12 +134,13 @@ public class SimulatorTest {
 
                                     if (establishedRoute == null || establishedRoute.getFsIndexBegin() == -1) {
                                         //Bloqueo
-                                        System.out.println("BLOQUEO"); //comentar
+                                        System.out.println("BLOQUEO");
                                         demand.setBlocked(true);
                                         insertData(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
                                         bloqueos++;
                                     } else {
-                                        //System.out.println("Ruta establecida"); //comentar
+                                        rutas++;
+                                        System.out.println("Ruta");
                                         //System.out.println("Cores: " + establishedRoute.getPathCores());
                                         AssignFsResponse response = Utils.assignFs(graph, establishedRoute, crosstalkPerUnitLength);
                                         establishedRoute = response.getRoute();
@@ -173,8 +164,8 @@ public class SimulatorTest {
                                 }
                             }
                             System.out.println("TOTAL DE BLOQUEOS: " + bloqueos);
+                            System.out.println("TOTAL DE RUTAS: " + rutas);
                             System.out.println("Cantidad de demandas: " + demandaNumero);
-                            System.out.println("Topologia:" + input.getTopologies());
                             System.out.println(System.lineSeparator());
                         }
                     }

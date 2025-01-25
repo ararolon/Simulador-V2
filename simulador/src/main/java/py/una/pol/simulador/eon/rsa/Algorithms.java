@@ -6,12 +6,12 @@ package py.una.pol.simulador.eon.rsa;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
-
 import py.una.pol.simulador.eon.models.Demand;
 import py.una.pol.simulador.eon.models.EstablishedRoute;
 import py.una.pol.simulador.eon.models.FrequencySlot;
@@ -24,7 +24,96 @@ import py.una.pol.simulador.eon.utils.Utils;
  */
 public class Algorithms {
 
-   
+    /**
+     * Algoritmo RSA sin conmutación de núcleos
+     *
+     * @param graph Grafo de la topología de la red
+     * @param demand Demanda a insertar
+     * @param capacity Capacidad de la red
+     * @param cores Cantidad total de núcleos
+     * @param maxCrosstalk Máximo nivel de crosstalk permitido
+     * @param crosstalkPerUnitLength Crosstalk por unidad de longitud (h) de la
+     * fibra
+     * @return Ruta establecida, o null si hay bloqueo
+     */
+    public static EstablishedRoute ruteoCoreUnico(Graph<Integer, Link> graph, Demand demand, Integer capacity, Integer cores, BigDecimal maxCrosstalk, Double crosstalkPerUnitLength) {
+        int k = 0;
+
+        List<GraphPath<Integer, Link>> kspPlaced = new ArrayList<>();
+        List<List<Integer>> kspPlacedCores = new ArrayList<>();
+        Integer fsIndexBegin = null;
+        Integer selectedIndex;
+        // Iteramos los KSP elegidos
+
+        KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
+        List<GraphPath<Integer, Link>> kspaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+        while (k < kspaths.size() && kspaths.get(k) != null) {
+            fsIndexBegin = null;
+            GraphPath<Integer, Link> ksp = kspaths.get(k);
+            // Recorremos los FS
+            for (int i = 0; i < capacity - demand.getFs(); i++) {
+                for (int core = 0; core < cores; core++) {
+                    List<Link> enlacesLibres = new ArrayList<>();
+                    List<Integer> kspCores = new ArrayList<>();
+                    List<BigDecimal> crosstalkFSList = new ArrayList<>();
+                    // Se inicializa la lista de valores de crosstalk para cada slot de frecuencia del bloque
+                    for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {
+                        crosstalkFSList.add(BigDecimal.ZERO);
+                    }
+                    // Se recorre la ruta
+                    for (Link link : ksp.getEdgeList()) {
+                        if (core < cores) {
+                            // Se obtiene los slots de frecuencia a verificar
+                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());
+
+                            // Controla si está ocupado por una demanda
+                            if (isFSBlockFree(bloqueFS)) {
+
+                                // Control de crosstalk
+                                for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {
+                                    // Control de crosstalk en la ruta elegida
+                                    BigDecimal crosstalkRuta = crosstalkFSList.get(fsCrosstalkIndex);
+                                    if (isCrosstalkFree(bloqueFS.get(fsCrosstalkIndex), maxCrosstalk, crosstalkRuta)) {
+                                        // Control de crosstalk en los cores vecinos
+                                        if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
+                                            enlacesLibres.add(link);
+                                            kspCores.add(core);
+                                            fsIndexBegin = i;
+                                            selectedIndex = k;
+                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance())));
+                                            crosstalkFSList.set(fsCrosstalkIndex, crosstalkRuta);
+                                            fsCrosstalkIndex = demand.getFs();
+                                            // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
+                                            if (enlacesLibres.size() == ksp.getEdgeList().size()) {
+                                                kspPlaced.add(kspaths.get(selectedIndex));
+                                                kspPlacedCores.add(kspCores);
+                                                k = kspaths.size();
+                                                i = capacity;
+                                                core = cores;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            k++;
+        }
+        EstablishedRoute establisedRoute;
+        if (fsIndexBegin != null && !kspPlaced.isEmpty()) {
+            establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
+                    fsIndexBegin, demand.getFs(), demand.getLifetime(),
+                    demand.getSource(), demand.getDestination(), kspPlacedCores.get(0));
+        } else {
+            //System.out.println("Bloqueo");
+            establisedRoute = null;
+        }
+        return establisedRoute;
+
+    }
+
     /**
      * Algoritmo RSA con conmutación de núcleos
      *
@@ -48,44 +137,42 @@ public class Algorithms {
         //k caminos más cortos entre source y destination de la demanda actual
 
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
-        List<GraphPath<Integer, Link>> kspaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5); // aca se corre el algoritmo y encuentra lo  5 caminos
-        while (k < kspaths.size() && kspaths.get(k) != null) {  // asume que si o si encuentra un camino porque al hacer get no esta vacio.
+        List<GraphPath<Integer, Link>> kspaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
+        while (k < kspaths.size() && kspaths.get(k) != null) {
             fsIndexBegin = null;
-            GraphPath<Integer, Link> ksp = kspaths.get(k); // aca va iterar los caminos (empieza por el primer camino y asi sucesivamente , k es el indice de recorrido)
+            GraphPath<Integer, Link> ksp = kspaths.get(k);
             // Recorremos los FS
-            for (int i = 0; i < capacity - demand.getFs(); i++) { // porque hace saltos igual a la cantidad del valor de slots necesarios por demanda obtenido en demand.getFs
+            for (int i = 0; i < capacity - demand.getFs(); i++) {
                 List<Link> enlacesLibres = new ArrayList<>();
                 List<Integer> kspCores = new ArrayList<>();
-                List<BigDecimal> crosstalkFSList = new ArrayList<>(); // los slots con crosstlak (se va actualizando por demanda,core, es una lista auxiliar)
-                for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {  
-                    //Inicializa con el valor cero la lista , con BigDecimal para que sea mas preciso 
+                List<BigDecimal> crosstalkFSList = new ArrayList<>();
+                for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {
                     crosstalkFSList.add(BigDecimal.ZERO);
                 }
-                for (Link link : ksp.getEdgeList()) { //obtiene los enlaces de los camino que se esta analizando, iterando
-                    for (int core = 0; core < cores; core++) { // itera los nucleos del enlace
-                        if (i < capacity - demand.getFs()) { // si el indice que recorre todavia no salio de rango
-                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());// obtiene la porcion de slots que necesita la demanda
+                for (Link link : ksp.getEdgeList()) {
+                    for (int core = 0; core < cores; core++) {
+                        if (i < capacity - demand.getFs()) {
+                            List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());
                             // Controla si está ocupado por una demanda
-                            if (isFSBlockFree(bloqueFS)) {  //si se puede utilizar el bloque de slots, controla el crosstalk, pero si uno de ellos no se puede usar, pasa al siguiente core
+                            if (isFSBlockFree(bloqueFS)) {
                                 // Control de crosstalk
                                 if (isFsBlockCrosstalkFree(bloqueFS, maxCrosstalk, crosstalkFSList)) {
                                     if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
-                                        enlacesLibres.add(link); //enlace libre de crosstalk
-                                        kspCores.add(core); //core aceptado
-                                        fsIndexBegin = i;  
+                                        enlacesLibres.add(link);
+                                        kspCores.add(core);
+                                        fsIndexBegin = i;
                                         selectedIndex = k;
                                         for (int crosstalkFsListIndex = 0; crosstalkFsListIndex < crosstalkFSList.size(); crosstalkFsListIndex++) {
                                             BigDecimal crosstalkRuta = crosstalkFSList.get(crosstalkFsListIndex);
-                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance()))); //auxiliar
-                                            crosstalkFSList.set(crosstalkFsListIndex, crosstalkRuta); // Calcular el crosstalk real sobre el FS y asigna en la lista de los valores de crosstalk de los fs
+                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance())));
+                                            crosstalkFSList.set(crosstalkFsListIndex, crosstalkRuta);
                                         }
-                                        core = cores; // para que salga del ciclo porque toma el primer core en el cual encuentra bloques de Fs libres y que puedan llevar la demanda.
+                                        core = cores;
                                         // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
                                         if (enlacesLibres.size() == ksp.getEdgeList().size()) {
-                                            System.out.printf("\n La ruta establece con %d enlaces",ksp.getEdgeList().size());
                                             kspPlaced.add(kspaths.get(selectedIndex));
                                             kspPlacedCores.add(kspCores);
-                                            k = kspaths.size(); //para que salga del bucle, al encontrar la ruta
+                                            k = kspaths.size();
                                             i = capacity;
                                         }
                                     }
@@ -98,7 +185,6 @@ public class Algorithms {
             }
             k++;
         }
-        //Se usa los datos obtenidos del RSA para indicar la ruta establecida.
         EstablishedRoute establisedRoute;
         if (fsIndexBegin != null && !kspPlaced.isEmpty()) {
             establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
@@ -111,8 +197,7 @@ public class Algorithms {
         return establisedRoute;
 
     }
-    // Aqui se controla si un bloque de slots esta libre , no solo uno es decir n slots estan libres?
-    //donde n es la cantidad de fs requerida por la demanda 
+
     private static Boolean isFSBlockFree(List<FrequencySlot> bloqueFS) {
         for (FrequencySlot fs : bloqueFS) {
             if (!fs.isFree()) {
@@ -127,14 +212,10 @@ public class Algorithms {
         return crosstalkActual.compareTo(maxCrosstalk) <= 0;
     }
 
-    /* Analiza un bloque de slots , si esta libre del crosstalk maximo tolerado.
-        */
-
     private static Boolean isFsBlockCrosstalkFree(List<FrequencySlot> fss, BigDecimal maxCrosstalk, List<BigDecimal> crosstalkRuta) {
         for (int i = 0; i < fss.size(); i++) {
-            //va agregando los valores de los crosstalk en la lista auxiliara para ir comparando)
             BigDecimal crosstalkActual = crosstalkRuta.get(i).add(fss.get(i).getCrosstalk());
-            if (crosstalkActual.compareTo(maxCrosstalk) > 0) { //compara la sumatoria de los crosstalks
+            if (crosstalkActual.compareTo(maxCrosstalk) > 0) {
                 return false;
             }
         }
@@ -145,12 +226,12 @@ public class Algorithms {
         List<Integer> vecinos = Utils.getCoreVecinos(core);
         for (Integer coreVecino : vecinos) {
             for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
-                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i); // Compara con el mismo Fs pero en el core vecino
-                if (!fsVecino.isFree()) { //si el Fs en el core vecino tiene demanda, se calcula el crosstalk en decibelios
+                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
+                if (!fsVecino.isFree()) {
                     BigDecimal crosstalkASumar = Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance()));
-                    BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkASumar); // variable auxiliar para comparar con el crosstalk maximo, ademas le asigna al fs vecino , el crosstalk que genera
+                    BigDecimal crosstalk = fsVecino.getCrosstalk().add(crosstalkASumar);
                     //BigDecimal crosstalkDB = Utils.toDB(crosstalk.doubleValue());
-                    if (crosstalk.compareTo(maxCrosstalk) >= 0) { //compara con el valor maximo tolerado
+                    if (crosstalk.compareTo(maxCrosstalk) >= 0) {
                         return false;
                     }
                 }
