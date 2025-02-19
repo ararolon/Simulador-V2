@@ -32,14 +32,27 @@ import py.una.pol.simulador.eon.utils.Utils;
  */
 public class SimulatorTest {
 
+/*
+    * Variables globales
+    * para identificar tipos de bloqueos
+    */
+    public static int contador_crosstalk = 0;
+    public static int contador_frag= 0;
+    public static int contador_frag_ruta = 0;
+
+
     /**
      * Configuración inicial para el simulador
      *
      * @param erlang Erlang para la simulación
      * @return Datos de entrada del simulador
      */
+
     private Input getTestingInput(Integer erlang) {
         Input input = new Input();
+        /*
+         * Declaro las variables iniciales 
+         */
 
         input.setDemands(100000);
         input.setTopologies(new ArrayList<>());
@@ -106,8 +119,12 @@ public class SimulatorTest {
                             List<EstablishedRoute> establishedRoutes = new ArrayList<>();
                             System.out.println("Inicializando simulación del RSA " + algorithm.label() + " para erlang: " + (erlang) + " para la topología " + topology.label() + " y H = " + crosstalkPerUnitLength.toString());
                             int demandaNumero = 1;
-                            int rutas = 0;
+                            Integer camino = null;
+                            int rutas = 0; 
                             int bloqueos = 0;
+                            //Declaro las variables auxiliares para verificar el camino tomado 
+                             Integer k1 = 0,k2 = 0, k3 = 0 , k4 = 0, k5 =0;
+
                             // Iteración de unidades de tiempo
                             for (int i = 0; i < input.getSimulationTime(); i++) {
                                 System.out.println("Tiempo: " + (i + 1));
@@ -121,9 +138,7 @@ public class SimulatorTest {
 
                                     EstablishedRoute establishedRoute;
                                     switch (algorithm) {
-                                        case CORE_UNICO -> {
-                                            establishedRoute = Algorithms.ruteoCoreUnico(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
-                                        }
+
                                         case MULTIPLES_CORES -> {
                                             establishedRoute = Algorithms.ruteoCoreMultiple(graph, demand, input.getCapacity(), input.getCores(), input.getMaxCrosstalk(), crosstalkPerUnitLength);
                                         }
@@ -139,6 +154,22 @@ public class SimulatorTest {
                                         insertData(algorithm.label(), topology.label(), "" + i, "" + demand.getId(), "" + erlang, crosstalkPerUnitLength.toString());
                                         bloqueos++;
                                     } else {
+
+                                       camino = establishedRoute.getK_elegido();
+                                    
+                                       switch (camino) {
+                                           case 0 -> k1++;
+                                              
+                                           case 1 -> k2++;
+                                            
+                                           case 2 -> k3++;
+                                           
+                                           case 3 -> k4++;
+                                           
+                                           default -> k5++;
+                                       }
+                                        
+
                                         rutas++;
                                         System.out.println("Ruta");
                                         //System.out.println("Cores: " + establishedRoute.getPathCores());
@@ -166,12 +197,16 @@ public class SimulatorTest {
                             System.out.println("TOTAL DE BLOQUEOS: " + bloqueos);
                             System.out.println("TOTAL DE RUTAS: " + rutas);
                             System.out.println("Cantidad de demandas: " + demandaNumero);
+                            System.out.println("RESUMEN DE DATOS \n");
+                            System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n",k1,k2,k3,k4,k5);
+                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d",contador_frag,contador_crosstalk,contador_frag_ruta);
                             System.out.println(System.lineSeparator());
                         }
                     }
                 }
             }
-        } catch (IOException | IllegalArgumentException ex) {
+        } 
+        catch (IOException | IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         }
     }

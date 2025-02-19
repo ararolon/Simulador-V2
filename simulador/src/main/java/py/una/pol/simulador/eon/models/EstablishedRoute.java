@@ -43,6 +43,15 @@ public class EstablishedRoute {
     private List<Integer> pathCores;
 
     /**
+     *  Varuable para guardar el camino con el que 
+     *  se establece la ruta , el valor es de 0- 5 (por los 5 caminos del KSP)
+     **/
+
+    private Integer K_elegido;
+
+
+
+    /**
      * Constructor vacío
      */
     public EstablishedRoute() {
@@ -60,7 +69,7 @@ public class EstablishedRoute {
      * @param pathCores Núcleos a los que pertenecen los enlaces de la lista
      * path
      */
-    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores) {
+    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores,Integer K_elegido) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fsWidth = fsWidth;
@@ -68,6 +77,7 @@ public class EstablishedRoute {
         this.from = from;
         this.to = to;
         this.pathCores = pathCores;
+        this.K_elegido = K_elegido;
     }
 
     /**
