@@ -73,7 +73,7 @@ public class SimulatorTest {
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+        //nput.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
         input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
         return input;
@@ -125,6 +125,9 @@ public class SimulatorTest {
                             //Declaro las variables auxiliares para verificar el camino tomado 
                              Integer k1 = 0,k2 = 0, k3 = 0 , k4 = 0, k5 =0;
 
+                            // Diametro del grafo
+                            Integer Diametro = 0 ;
+
                             // Iteración de unidades de tiempo
                             for (int i = 0; i < input.getSimulationTime(); i++) {
                                 System.out.println("Tiempo: " + (i + 1));
@@ -169,6 +172,10 @@ public class SimulatorTest {
                                            default -> k5++;
                                        }
                                         
+                                        // va buscando y guardando el diametro mayor entre las rutas.
+
+                                        if(establishedRoute.getDiametro() > Diametro)
+                                            Diametro = establishedRoute.getDiametro();
 
                                         rutas++;
                                         System.out.println("Ruta");
@@ -194,19 +201,21 @@ public class SimulatorTest {
                                     }
                                 }
                             }
+                            System.out.println("---------------------------------");
+                            System.out.println("\nTopologia" + input.getTopologies());
                             System.out.println("TOTAL DE BLOQUEOS: " + bloqueos);
                             System.out.println("TOTAL DE RUTAS: " + rutas);
                             System.out.println("Cantidad de demandas: " + demandaNumero);
                             System.out.println("RESUMEN DE DATOS \n");
                             System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n",k1,k2,k3,k4,k5);
                             System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d",contador_frag,contador_crosstalk,contador_frag_ruta);
+                            System.out.printf("\nEl diametro del grafo es :  %d kms\n",Diametro);
                             System.out.println(System.lineSeparator());
                         }
                     }
                 }
             }
-        } 
-        catch (IOException | IllegalArgumentException ex) {
+        } catch (IOException | IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         }
     }

@@ -113,7 +113,11 @@ public class Utils {
      */
     public static double XT(int n, double h, int L) {
         double XT = 0;
-        for (int i = 0; i < n; i++) {
+        /* le agrego el menor o igual , porque se tiene que ejecutar una vez
+        y luego si en los vecinos hay crosstal , se le debe sumar la cantidad de vecinos
+        donde se presenta crosstalk en las mismas ranuras*/
+        
+        for (int i = 0; i <= n; i++) {
             XT = XT + (h * (L * 1000));
         }
         return XT;

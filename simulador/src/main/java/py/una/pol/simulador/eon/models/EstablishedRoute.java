@@ -49,7 +49,11 @@ public class EstablishedRoute {
 
     private Integer K_elegido;
 
+    /*
+     * Variable para guardar la mayor longitud de los enlaces del camino K.
+     */
 
+    private Integer diametro;
 
     /**
      * Constructor vacío
@@ -67,9 +71,11 @@ public class EstablishedRoute {
      * @param from Nodo origen
      * @param to Nodo destino
      * @param pathCores Núcleos a los que pertenecen los enlaces de la lista
+     * @param K_elegido Es el camino elegido entre los 5 caminos del alogirmto KSP.
+     * @param diametro es la longitud mayor encontrado entre todos los enlaces del camino K_elegido de la ruta.
      * path
      */
-    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores,Integer K_elegido) {
+    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores,Integer K_elegido,Integer diametro) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fsWidth = fsWidth;
@@ -78,6 +84,7 @@ public class EstablishedRoute {
         this.to = to;
         this.pathCores = pathCores;
         this.K_elegido = K_elegido;
+        this.diametro = diametro;
     }
 
     /**

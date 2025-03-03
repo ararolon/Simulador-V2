@@ -50,6 +50,12 @@ public class Algorithms {
         Boolean flag_crosstalk =false;
         Boolean flag_frag = false;
         Boolean flag_capacidad = false;
+        //variable auxiliar para hallar el diametro del camino
+        Integer D = 0;
+
+        //variable para calcular la cantidad de vecinos con crosstalk
+        int v_crosstalk = 0;
+
         // Iteramos los KSP elegidos
         //k caminos más cortos entre source y destination de la demanda actual
 
@@ -66,6 +72,7 @@ public class Algorithms {
                 for (int fsCrosstalkIndex = 0; fsCrosstalkIndex < demand.getFs(); fsCrosstalkIndex++) {
                     crosstalkFSList.add(BigDecimal.ZERO);
                 } 
+                D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta candidata.
                 for (Link link : ksp.getEdgeList()) {
                     for (int core = 0; core < cores; core++) {
                         flag_crosstalk =false;
@@ -78,16 +85,24 @@ public class Algorithms {
                                 // Control de crosstalk
                                 if (isFsBlockCrosstalkFree(bloqueFS, maxCrosstalk, crosstalkFSList)) {
                                     if (isNextToCrosstalkFreeCores(link, maxCrosstalk, core, i, demand.getFs(), crosstalkPerUnitLength)) {
+                                        // se obtiene la cantidad de nucleos a considerar en el crosstalk 
+                                        // siempre +1 porque 1 de la ruta analizada y luego los nucelos a considerar
+                                        v_crosstalk = CalculaVecinosConCrosstalk(link, core, i, demand.getFs());
                                         enlacesLibres.add(link);
                                         kspCores.add(core);
                                         fsIndexBegin = i;
                                         selectedIndex = k;
+                                        //calculo del crosstalk de la red y se asigna a las ranuras candidatas donde se establece la demanda.
                                         for (int crosstalkFsListIndex = 0; crosstalkFsListIndex < crosstalkFSList.size(); crosstalkFsListIndex++) {
                                             BigDecimal crosstalkRuta = crosstalkFSList.get(crosstalkFsListIndex);
-                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(Utils.getCantidadVecinos(core), crosstalkPerUnitLength, link.getDistance())));
+                                            crosstalkRuta = crosstalkRuta.add(Utils.toDB(Utils.XT(v_crosstalk, crosstalkPerUnitLength, link.getDistance())));
                                             crosstalkFSList.set(crosstalkFsListIndex, crosstalkRuta);
                                         }
                                         core = cores;
+                                        // halla el enlace de mayor longitud
+                                        if (link.getDistance() > D)
+                                            D = link.getDistance();
+                                             
                                         // Si todos los enlaces tienen el mismo bloque de FS libre, se agrega la ruta a la lista de rutas establecidas.
                                         if (enlacesLibres.size() == ksp.getEdgeList().size()) {
                                             kspPlaced.add(kspaths.get(selectedIndex));
@@ -98,15 +113,18 @@ public class Algorithms {
                                     }
                                     else{
                                         flag_crosstalk = true;
+                                        SimulatorTest.contador_crosstalk ++;
                                     }
                                 }
                                 else{
                                     flag_crosstalk = true;
+                                    SimulatorTest.contador_crosstalk ++;
                                 }
 
                             }
                             else{
                                 flag_frag = true;
+                                SimulatorTest.contador_frag ++;
                             }
                         }
                     }
@@ -123,20 +141,22 @@ public class Algorithms {
         if (fsIndexBegin != null && !kspPlaced.isEmpty()) {
             establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
                     fsIndexBegin, demand.getFs(), demand.getLifetime(),
-                    demand.getSource(), demand.getDestination(), kspPlacedCores.get(0),selectedIndex);
+                    demand.getSource(), demand.getDestination(), kspPlacedCores.get(0),selectedIndex,D);
         } else {
 
 
            if(flag_capacidad == true){
                System.out.println("bloqueo por capacidad\n");
+               // el contador real de bloqueos de la red , porque cuando se produce un bloqueo 
+               //es por no completar la cantidad de enlaces para una ruta candidata.
                SimulatorTest.contador_frag_ruta++;
            }
            if(flag_crosstalk == true){
-               SimulatorTest.contador_crosstalk++;
+               //SimulatorTest.contador_crosstalk++;
            }
       
            if(flag_frag == true){
-               SimulatorTest.contador_frag++;
+               ///SimulatorTest.contador_frag++;
            }
 
 
@@ -187,5 +207,41 @@ public class Algorithms {
             }
         }
         return true;
+    }
+
+
+    /****
+     * Funcion que retorna la cantidad de vecinos
+     * afectados por el crosstalk , y que se deben tener encuenta para el calculo
+     * del crosstalk de la ruta
+     * 
+     *@param  link , la el enlace analizado
+     *@param  core , cantidad de nucleos de la fibra = 7
+     *@param  fsIndexBegin , el indice de la ranura inicial del bloque de ranuras candidatas
+     *@param  fsWidth, cantidad de ranuras necesarias para la demanda
+     *  
+     *@return cantidad de vecinos a tener en cuenta en el calculo del crosstalk de la red.
+     */
+
+
+    private static int CalculaVecinosConCrosstalk(Link link, Integer core, Integer fsIndexBegin, Integer fsWidth){
+        //variable auxiliar donde se guarda la cantidad de vecinos que si son afectados por el crosstalk.
+        int vecino_afectado = 0;  
+        List<Integer> vecinos = Utils.getCoreVecinos(core);
+        
+        for (Integer coreVecino : vecinos) {
+            for (Integer i = fsIndexBegin; i < fsIndexBegin + fsWidth; i++) {
+                FrequencySlot fsVecino = link.getCores().get(coreVecino).getFrequencySlots().get(i);
+                if (!fsVecino.isFree()) {
+                   vecino_afectado ++;
+                   // Salir del for interno y continuar con el siguiente coreVecino
+                   break;
+                }
+                
+            }
+        }
+
+
+        return (vecino_afectado + 1);
     }
 }
