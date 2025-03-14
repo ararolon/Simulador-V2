@@ -71,5 +71,10 @@ public class Input {
      * simular
      */
     private List<Double> crosstalkPerUnitLenghtList;
+    
+    /**
+     * Variable para indicar que tipo de h se usa , del 1 al 3 
+     */
 
+    private String numero_h;
 }

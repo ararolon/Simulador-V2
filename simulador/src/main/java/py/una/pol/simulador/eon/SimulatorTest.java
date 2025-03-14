@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import py.una.pol.simulador.eon.models.enums.TopologiesEnum;
 import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.MathUtils;
 import py.una.pol.simulador.eon.utils.Utils;
+import py.una.pol.simulador.eon.utils.GraphUtils;
 
 /**
  *
@@ -73,9 +75,13 @@ public class SimulatorTest {
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        //nput.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
         input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
+        //input.setNumero_h("h1");
+        //input.setNumero_h("h2");
+        input.setNumero_h("h3");
+
         return input;
     }
 
@@ -86,10 +92,12 @@ public class SimulatorTest {
      */
     public static void main(String[] args) {
         try {
+            //Bases de datos
             createTable();
+            CreateDataBase();
             // Datos de entrada
             for (int erlang = 2000; erlang <= 2000; erlang = erlang + 1000) {
-
+               
                 Input input = new SimulatorTest().getTestingInput(erlang);
                 for (TopologiesEnum topology : input.getTopologies()) {
 
@@ -97,7 +105,7 @@ public class SimulatorTest {
                     Graph<Integer, Link> graph = Utils.createTopology(topology,
                             input.getCores(), input.getFsWidth(), input.getCapacity());
 
-                    //GraphUtils.createImage(graph, topology.label());
+                    GraphUtils.createImage(graph, topology.label());
                     // Contador de demandas utilizado para identificación
                     Integer demandsQ = 1;
                     List<List<Demand>> listaDemandas = new ArrayList<>();
@@ -127,6 +135,19 @@ public class SimulatorTest {
 
                             // Diametro del grafo
                             Integer Diametro = 0 ;
+                            //Variables para calcular el promedio del grado del grafo
+                            int prom_grado = 0; //valor promedio del grado del grafo
+                            int grado_grafo = 0; //grado del grafo
+
+                            for(int vertex = 0; vertex < graph.vertexSet().size(); vertex++){
+                                grado_grafo = grado_grafo + graph.degreeOf(vertex);
+                            }
+
+                            prom_grado = (grado_grafo/graph.vertexSet().size());
+
+                            
+                            
+
 
                             // Iteración de unidades de tiempo
                             for (int i = 0; i < input.getSimulationTime(); i++) {
@@ -201,23 +222,110 @@ public class SimulatorTest {
                                     }
                                 }
                             }
+
+                            //Determina los datos para ingresar a la base de datos
+
+                            String tipo_erlang;
+
+                            if(erlang<1000){
+                                tipo_erlang = "BAJO";
+                            }
+                            else if( erlang>1000 && erlang< 2000){
+                                tipo_erlang = "MEDIO";
+                            }
+                            else{
+                                tipo_erlang = "ALTO";
+
+                            }
+
+                            // los motivos de bloqueos
+
+                            String motivo_bloqueo = MotivoBloqueo(contador_frag, contador_crosstalk);
+
+                            String porcentaje = PorcentajeBloqueo(bloqueos, contador_frag, contador_crosstalk);
+
+                        
+                                
+
+                            InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado);
+                            
                             System.out.println("---------------------------------");
-                            System.out.println("\nTopologia" + input.getTopologies());
+                            System.out.println("\nTopologia" + input.getTopologies()+"\n");
                             System.out.println("TOTAL DE BLOQUEOS: " + bloqueos);
                             System.out.println("TOTAL DE RUTAS: " + rutas);
                             System.out.println("Cantidad de demandas: " + demandaNumero);
-                            System.out.println("RESUMEN DE DATOS \n");
+                            System.out.println("\nRESUMEN DE DATOS \n");
                             System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n",k1,k2,k3,k4,k5);
                             System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d",contador_frag,contador_crosstalk,contador_frag_ruta);
                             System.out.printf("\nEl diametro del grafo es :  %d kms\n",Diametro);
+                            System.out.printf("\nEl grado promedio: %d",prom_grado);
                             System.out.println(System.lineSeparator());
                         }
                     }
                 }
             }
-        } catch (IOException | IllegalArgumentException ex) {
+        }catch (IOException | IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         }
+    }
+
+
+    /**
+     * Funcion que retorna el motivo de fragmentacion de la red
+     * @param  contador1 es el contador de cantidades de bloqueos por fragmentacion
+     * @param  contador2 es el contador de cantidades de bloqueos por crosstalk
+     * @return  Motivo de fragmentacion de la red
+     * 
+     */
+
+    public static String MotivoBloqueo(int contador1, int contador2){
+
+        String motivo_bloqueo;
+
+        if(contador1 > contador2){
+            motivo_bloqueo = "Fragmentacion";
+        }
+        else if (contador1 > contador2){
+            motivo_bloqueo = "Crosstalk";
+        }
+        else{
+            motivo_bloqueo = "Crosstalk y Fragmentacion";
+        }
+
+        return motivo_bloqueo;
+
+     }
+
+   
+    /***
+     * Funcion que devuelve el porcentaje de bloqueo de la red respecto al motivo de bloqueo
+     * @param  bloqueos Cantidad de bloqueos de la red
+     * @param contador1 Cantidad de bloqueos por fragmentacion en la red
+     * @param contador2 Cantidad de bloqueos por crosstalk en la red
+     * 
+     * @return  el porcentaje de bloqueo.
+     * 
+     */
+
+    public static String  PorcentajeBloqueo(int bloqueos,int contador1, int contador2 ){
+
+        String porcentaje = "";
+        float p_frag,p_crosstalk;
+        
+        if(contador1 == 0 || contador2 == 0){
+            porcentaje = "100";
+        }
+        else if( contador1 > 0 && contador2 > 0){
+        
+        p_frag = (contador1*100)/bloqueos;
+        p_crosstalk = (contador2*100)/bloqueos;
+
+        porcentaje = "" + p_frag + " fragmentacion "+ " y " + p_crosstalk + "crosstalk";
+
+        }
+
+        return porcentaje;
+
     }
 
     /**
@@ -297,4 +405,127 @@ public class SimulatorTest {
             System.exit(0);
         }
     }
+
+
+        
+    /*Funcion para crear la base de datos donde se van a guardar los Resumenes obtenidos
+    de simulacion de las diferentes topologias*/
+    public static void CreateDataBase() {
+        
+        Connection conexion;
+
+        Statement stmt;
+
+        try {
+
+            Class.forName("org.sqlite.JDBC");
+
+            conexion = DriverManager.getConnection("jdbc:sqlite:Resumen.db");
+
+            System.out.println("\n...Creando Base de datos para resumen de datos...\n");
+
+            stmt = conexion.createStatement();
+
+            //String dropTable = "DROP TABLE Resumen ";
+
+
+            String sql = "CREATE TABLE IF NOT EXISTS Resumen "
+                    + "("
+                    + "topologia TEXT NOT NULL, "
+                    + "erlang TEXT NOT NULL, "
+                    + "tipo_erlang TEXT NOT NULL, "
+                    + "h TEXT NOT NULL, "
+                    + "valor_h tiempo TEXT NOT NULL, "
+                    + "bloqueos TEXT NOT NULL, "
+                    + "motivo_Bloqueo TEXT NOT NULL, "
+                    + "porcentaje_Bloqueo TEXT NOT NULL, "
+                    + "rutas TEXT NOT NULL, "
+                    + "diametro TEXT NOT NULL, "
+                    + "grado TEXT NOT NULL) ";
+            /*try {
+                stmt.executeUpdate(dropTable);
+            }catch (SQLException ex) {
+                System.out.println(ex.getMessage());
+            }*/
+            stmt.executeUpdate(sql);
+            stmt.close();
+            conexion.close();
+        } catch (ClassNotFoundException | SQLException e) {
+            System.out.println(e.getClass().getName() + ": " + e.getMessage());
+            System.exit(0);
+        }
+    }
+   
+    /**
+     * Funcion que inserta los datos en la Base de datos de resumen
+     * @param  topologia
+     * 
+     * 
+     */
+
+    public static void InsertaDatos(String topologia, String erlang, String tipo_erlang, String h, String valor_h,
+                                    String bloqueos, String motivo_Bloqueo, String porcentaje_Bloqueo,
+                                    String rutas, String diametro, String grado) {
+        Connection conexion = null;
+        PreparedStatement stmt = null;
+
+        try {
+            // Cargar el driver de SQLite
+            Class.forName("org.sqlite.JDBC");
+
+            // Establecer conexión con la base de datos SQLite
+            conexion = DriverManager.getConnection("jdbc:sqlite:Resumen.db");
+
+            // Desactivar auto-commit para control de transacciones
+            conexion.setAutoCommit(false);
+
+            // Consulta SQL con placeholders (?) para evitar errores de sintaxis e inyección SQL
+            String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, motivo_Bloqueo, porcentaje_Bloqueo, rutas, diametro, grado) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            // Crear el PreparedStatement y asignar valores
+            stmt = conexion.prepareStatement(sql);
+            stmt.setString(1, topologia);
+            stmt.setString(2, erlang);
+            stmt.setString(3, tipo_erlang);
+            stmt.setString(4, h);
+            stmt.setString(5, valor_h);
+            stmt.setString(6, bloqueos);
+            stmt.setString(7, motivo_Bloqueo);
+            stmt.setString(8, porcentaje_Bloqueo);
+            stmt.setString(9, rutas);
+            stmt.setString(10, diametro);
+            stmt.setString(11, grado);
+
+            // Ejecutar la inserción
+            stmt.executeUpdate();
+
+            // Confirmar la transacción
+            conexion.commit();
+
+            System.out.println("¡Datos insertados correctamente!");
+
+        } catch (ClassNotFoundException | SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        
+            try {
+                if (conexion != null) {
+                    conexion.rollback();  // Deshacer cambios en caso de error
+                }
+            } catch (SQLException rollbackEx) {
+                    System.out.println("Error al hacer rollback: " + rollbackEx.getMessage());
+            }
+        } 
+        finally {
+            try {
+                if (stmt != null) stmt.close();
+                if (conexion != null) conexion.close();
+            } catch (SQLException closeEx) {
+                System.out.println("Error al cerrar la conexión: " + closeEx.getMessage());
+            }
+        }
+    
+    }
+
 }
+

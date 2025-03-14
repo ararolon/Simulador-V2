@@ -55,6 +55,16 @@ public class EstablishedRoute {
 
     private Integer diametro;
 
+
+    /*
+     * Lista Auxiliar para guardar la cantidad de nucleos que interfieren con el crosstalk por enlace
+     * esta lista se usa para el calculo del crosstalk de la ruta
+     */
+
+     List<Integer> vecinos_crosstalk;
+
+
+
     /**
      * Constructor vacío
      */
@@ -73,9 +83,9 @@ public class EstablishedRoute {
      * @param pathCores Núcleos a los que pertenecen los enlaces de la lista
      * @param K_elegido Es el camino elegido entre los 5 caminos del alogirmto KSP.
      * @param diametro es la longitud mayor encontrado entre todos los enlaces del camino K_elegido de la ruta.
-     * path
+     * @param vecinos_crosstalk lista donde se guardan los vecinos a considerar para el crosstalk por enlace de la ruta establecida
      */
-    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores,Integer K_elegido,Integer diametro) {
+    public EstablishedRoute(List<Link> path, Integer fsIndexBegin, Integer fsWidth, Integer lifetime, Integer from, Integer to, List<Integer> pathCores,Integer K_elegido,Integer diametro,List<Integer> vecinos_crosstalk) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fsWidth = fsWidth;
@@ -85,6 +95,7 @@ public class EstablishedRoute {
         this.pathCores = pathCores;
         this.K_elegido = K_elegido;
         this.diametro = diametro;
+        this.vecinos_crosstalk = vecinos_crosstalk;
     }
 
     /**
