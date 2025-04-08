@@ -242,12 +242,12 @@ public class Utils {
                 //se resta el crosstalk generado en el fs del core de la ruta.
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).getCrosstalk().subtract(crosstalkDB));
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setId_rutas(0);
-                //eliminar el numero del id de la lista de rutas del core. ( va a hacer una vez por cada enlace)
-                if( flag_delete == false){
-                    Eliminar_idrutas(establishedRoute,core,establishedRoute.getId(),j);
-                    flag_delete = true;
-                }
+                     
             }
+              
+            //eliminar el numero de id de la lista de rutas del core  
+            Eliminar_idrutas(establishedRoute,establishedRoute.getPathCores().get(j),establishedRoute.getId(),j);
+            
         }
     }
 
@@ -308,6 +308,7 @@ public class Utils {
      * @param establishedRoute es la ruta el cual se va a eliminar
      * @param core es indice del core analizado
      * @param id es el id de la ruta a eliminar
+     * @param j es el numero del enlace del cual se analiza de la ruta (se obtienen los datos para borrar)
      */
    
     private static void Eliminar_idrutas(EstablishedRoute establishedRoute,Integer core, Integer id,int camino){
@@ -319,11 +320,12 @@ public class Utils {
 
        id_rutas = establishedRoute.getPath().get(camino).getCores().get(core).getId_rutas();
  
-       for(int i = 0 ; i< size ; i++){
+       for(int i = 0 ; i < size ; i++){
 
             if (id_rutas.get(i).equals(id)){
 
                 establishedRoute.getPath().get(camino).getCores().get(core).getId_rutas().remove(i);
+                break;
                  
             }
        
