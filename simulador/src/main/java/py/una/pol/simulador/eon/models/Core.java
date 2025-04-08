@@ -24,6 +24,12 @@ public class Core implements Serializable {
      */
     private List<FrequencySlot> frequencySlots;
 
+    /*
+     * Una lista para tener todas las rutas que ocupan fs sobre un core
+     */
+
+     private List<Integer> id_rutas;
+
     /**
      * Constructor con cantidad de Ranuras de Frecuencia
      *
@@ -36,6 +42,8 @@ public class Core implements Serializable {
         for (int i = 0; i < frequencySlotQuantity; i++) {
             this.frequencySlots.add(new FrequencySlot(bandwidth.divide(new BigDecimal(frequencySlotQuantity), RoundingMode.HALF_UP)));
         }
+        //se incializa la lista de los id de las rutas
+        id_rutas = new ArrayList<>();
     }
 
     /**

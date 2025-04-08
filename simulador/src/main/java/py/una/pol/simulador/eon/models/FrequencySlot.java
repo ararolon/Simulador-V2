@@ -30,6 +30,11 @@ public class FrequencySlot implements Serializable {
     private BigDecimal crosstalk;
 
     /**
+     * Etiqueta para identificar con que ruta esta relacionado el fs
+     */
+    private Integer id_rutas;
+
+    /**
      * Constructor
      *
      * @param fsWidh Tamaño de la ranura de frecuencia en GHz.

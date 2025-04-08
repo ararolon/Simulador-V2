@@ -13,6 +13,9 @@ import lombok.Data;
 @AllArgsConstructor
 public class EstablishedRoute {
 
+
+    private  static int contador = 0;
+
     /**
      * Índice inicial del bloque de ranuras de frecuencias que ocupa la conexión
      */
@@ -64,6 +67,11 @@ public class EstablishedRoute {
      List<Integer> vecinos_crosstalk;
 
 
+    /*
+     * ID de la ruta
+     */
+
+     Integer id;
 
     /**
      * Constructor vacío
@@ -96,6 +104,7 @@ public class EstablishedRoute {
         this.K_elegido = K_elegido;
         this.diametro = diametro;
         this.vecinos_crosstalk = vecinos_crosstalk;
+        this.id = ++contador;
     }
 
     /**

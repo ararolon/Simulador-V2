@@ -115,7 +115,7 @@ public class Utils {
      * @param L Longitud del enlace
      * @return Crosstalk
      */
-    public static double XT(int n, double h, int L) {
+    public static double XT(Integer n, double h, int L) {
         double XT = 0;
         /* le agrego el menor o igual , porque se tiene que ejecutar una vez
         y luego si en los vecinos hay crosstal , se le debe sumar la cantidad de vecinos
@@ -168,27 +168,37 @@ public class Utils {
     public static AssignFsResponse assignFs(Graph<Integer, Link> graph, EstablishedRoute establishedRoute, Double crosstalkPerUnitLength) {
         for (int j = 0; j < establishedRoute.getPath().size(); j++) {
             for (int i = establishedRoute.getFsIndexBegin(); i < establishedRoute.getFsIndexBegin() + establishedRoute.getFsWidth(); i++) {
+                
+                double crosstalk = 0;
+                BigDecimal crosstalkDB = null;
+                // se establece que el fs ya esta ocupado
                 establishedRoute.getPath().get(j).getCores().get(establishedRoute.getPathCores().get(j)).getFrequencySlots().get(i).setFree(false);
+                //marca el fs con el id de la ruta.
+                establishedRoute.getPath().get(j).getCores().get(establishedRoute.getPathCores().get(j)).getFrequencySlots().get(i).setId_rutas(establishedRoute.getId());
+                
                 Integer core = establishedRoute.getPathCores().get(j);
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setLifetime(establishedRoute.getLifetime());
                 List<Integer> coreVecinos = getCoreVecinos(core);
-                // TODO: Asignar crosstalk
+                
+                //Se suma el crosstalk a los vecinos
                 for (Integer coreIndex = 0; coreIndex < establishedRoute.getPath().get(j).getCores().size(); coreIndex++) {
                     if (!core.equals(coreIndex) && coreVecinos.contains(coreIndex)) {
                         
-                            // aca tambien se debe agregar el cambio para la formula de calculo de crosstalk teniendo en cuenta los vecinos
+                        //se asigna el crosstalk a las ranuras de los cores vecinos
+                        crosstalk = XT(establishedRoute.getVecinos_crosstalk().get(j), crosstalkPerUnitLength, establishedRoute.getPath().get(j).getDistance());
+                        crosstalkDB = toDB(crosstalk);
+                        establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk().add(crosstalkDB));
 
-                            double crosstalk = XT(establishedRoute.getVecinos_crosstalk().get(j).intValue(), crosstalkPerUnitLength, establishedRoute.getPath().get(j).getDistance());
-                            BigDecimal crosstalkDB = toDB(crosstalk);
-                            establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk().add(crosstalkDB));
-                            
-                            //suma 2 veces el crosstalk?
-                            BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
-                            graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.add(crosstalkDB));
-                            //System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());
-                        
+                        // se suma doble el crosstalk...
+                        //BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
+                        //graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.add(crosstalkDB));
+                        //System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());
                     }
                 }
+                //tambien se agrega al core de la ruta , se le suma el crosstalk por si es que otras rutas tiene crosstalk en los cores vecinos.
+                //cuenta el crosstalk que genera a si mismo.
+                establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).getCrosstalk().add(crosstalkDB));
+                
             }
         }
         AssignFsResponse response = new AssignFsResponse(graph, establishedRoute);
@@ -205,22 +215,37 @@ public class Utils {
      */
     public static void deallocateFs(Graph<Integer, Link> graph, EstablishedRoute establishedRoute, Double crosstalkPerUnitLength) {
         for (int j = 0; j < establishedRoute.getPath().size(); j++) {
+            boolean flag_delete = false;
             for (int i = establishedRoute.getFsIndexBegin(); i < establishedRoute.getFsIndexBegin() + establishedRoute.getFsWidth(); i++) {
+               
+                double crosstalk = 0;
+                BigDecimal crosstalkDB = null;
                 Integer core = establishedRoute.getPathCores().get(j);
+                // establece nuevamente el fs como libre
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setFree(true);
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setLifetime(0);
                 List<Integer> coreVecinos = getCoreVecinos(core);
-                // TODO: Desasignar crosttalk
+
+                // Desasigna el crosstalk de los cores vecinos
                 for (Integer coreIndex = 0; coreIndex < establishedRoute.getPath().get(j).getCores().size(); coreIndex++) {
                     if (!core.equals(coreIndex) && coreVecinos.contains(coreIndex)) {
-                        double crosstalk = XT(establishedRoute.getVecinos_crosstalk().get(j).intValue(), crosstalkPerUnitLength, establishedRoute.getPath().get(j).getDistance());
-                        BigDecimal crosstalkDB = toDB(crosstalk);
+
+                        crosstalk = XT(establishedRoute.getVecinos_crosstalk().get(j), crosstalkPerUnitLength, establishedRoute.getPath().get(j).getDistance());
+                        crosstalkDB = toDB(crosstalk);
                         establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk().subtract(crosstalkDB));
 
-                        BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
-                        graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.subtract(crosstalkDB));
+                        //BigDecimal existingCrosstalk = graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk();
+                        //graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).setCrosstalk(existingCrosstalk.subtract(crosstalkDB));
                         //System.out.println("CT despues de suma" + graph.getEdge(establishedRoute.getPath().get(j).getTo(), establishedRoute.getPath().get(j).getFrom()).getCores().get(coreIndex).getFrequencySlots().get(i).getCrosstalk());
                     }
+                }
+                //se resta el crosstalk generado en el fs del core de la ruta.
+                establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).getCrosstalk().subtract(crosstalkDB));
+                establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setId_rutas(0);
+                //eliminar el numero del id de la lista de rutas del core. ( va a hacer una vez por cada enlace)
+                if( flag_delete == false){
+                    Eliminar_idrutas(establishedRoute,core,establishedRoute.getId(),j);
+                    flag_delete = true;
                 }
             }
         }
@@ -277,4 +302,32 @@ public class Utils {
         return vecinos;
     }
 
+
+    /**
+     * Elimina el id de la ruta eliminado en la lista de rutas el core
+     * @param establishedRoute es la ruta el cual se va a eliminar
+     * @param core es indice del core analizado
+     * @param id es el id de la ruta a eliminar
+     */
+   
+    private static void Eliminar_idrutas(EstablishedRoute establishedRoute,Integer core, Integer id,int camino){
+
+       //auxiliar para el tamanho de la lista 
+       int size = establishedRoute.getPath().get(camino).getCores().get(core).getId_rutas().size(); 
+
+       List<Integer> id_rutas = new ArrayList<>(); // variable auxiliar 
+
+       id_rutas = establishedRoute.getPath().get(camino).getCores().get(core).getId_rutas();
+ 
+       for(int i = 0 ; i< size ; i++){
+
+            if (id_rutas.get(i).equals(id)){
+
+                establishedRoute.getPath().get(camino).getCores().get(core).getId_rutas().remove(i);
+                 
+            }
+       
+        }
+
+    }
 }

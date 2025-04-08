@@ -160,6 +160,9 @@ public class Algorithms {
             establisedRoute = new EstablishedRoute(kspPlaced.get(0).getEdgeList(),
                     fsIndexBegin, demand.getFs(), demand.getLifetime(),
                     demand.getSource(), demand.getDestination(), kspPlacedCores.get(0),selectedIndex,D,kspPlacedVecinosCrosstalk);
+
+            Assigna_idruta(establisedRoute);
+
         } else {
 
 
@@ -269,6 +272,21 @@ public class Algorithms {
         }
 
 
-        return (vecino_afectado + 1);
+        return vecino_afectado ;
     }
+
+
+    private static void Assigna_idruta(EstablishedRoute establishedRoute){
+
+        for (int i = 0; i< establishedRoute.getPath().size(); i++ ){
+  
+          //una variable donde trae el core elegido para el enlace de la ruta
+          int core_index = establishedRoute.getPathCores().get(i);
+  
+          //va estableciendo los id de rutas en los cores de los enlaces
+          establishedRoute.getPath().get(i).getCores().get(core_index).getId_rutas().add(establishedRoute.getId());
+  
+        }
+    }
+  
 }
