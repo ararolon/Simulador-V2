@@ -241,7 +241,7 @@ public class Utils {
                 }
                 //se resta el crosstalk generado en el fs del core de la ruta.
                 establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setCrosstalk(establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).getCrosstalk().subtract(crosstalkDB));
-                establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setId_rutas(0);
+                establishedRoute.getPath().get(j).getCores().get(core).getFrequencySlots().get(i).setId_rutas(null);
                      
             }
               

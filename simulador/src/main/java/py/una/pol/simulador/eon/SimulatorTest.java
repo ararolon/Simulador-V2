@@ -54,7 +54,9 @@ public class SimulatorTest {
         Input input = new Input();
         /*
          * Declaro las variables iniciales 
+         * 
          */
+
 
         input.setDemands(100000);
         input.setTopologies(new ArrayList<>());
@@ -64,7 +66,7 @@ public class SimulatorTest {
         input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
         input.setFsRangeMin(2);
-        input.setCapacity(320);
+        input.setCapacity(325); 
         input.setCores(7);
         input.setLambda(5);
         input.setErlang(erlang);
@@ -75,9 +77,9 @@ public class SimulatorTest {
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
-        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
+        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
         //input.setNumero_h("h1");
         //input.setNumero_h("h2");
         input.setNumero_h("h3");
@@ -93,7 +95,7 @@ public class SimulatorTest {
     public static void main(String[] args) {
         try {
             //Bases de datos
-            createTable();
+            //createTable();
             CreateDataBase();
             // Datos de entrada
             for (int erlang = 2000; erlang <= 2000; erlang = erlang + 1000) {
@@ -247,7 +249,7 @@ public class SimulatorTest {
                         
                                 
 
-                            InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado);
+                            //InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado);
                             
                             System.out.println("---------------------------------");
                             System.out.println("\nTopologia" + input.getTopologies()+"\n");
@@ -259,6 +261,7 @@ public class SimulatorTest {
                             System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d",contador_frag,contador_crosstalk,contador_frag_ruta);
                             System.out.printf("\nEl diametro del grafo es :  %d kms\n",Diametro);
                             System.out.printf("\nEl grado promedio: %d",prom_grado);
+                            System.out.printf("\n entra en crosstalk %d",SimulatorTest.contador_crosstalk);
                             System.out.println(System.lineSeparator());
                         }
                     }
@@ -285,7 +288,7 @@ public class SimulatorTest {
         if(contador1 > contador2){
             motivo_bloqueo = "Fragmentacion";
         }
-        else if (contador1 > contador2){
+        else if (contador1 < contador2){
             motivo_bloqueo = "Crosstalk";
         }
         else{
