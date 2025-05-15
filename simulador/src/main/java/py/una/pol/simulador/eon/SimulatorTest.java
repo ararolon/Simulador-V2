@@ -41,6 +41,7 @@ public class SimulatorTest {
     public static int contador_crosstalk = 0;
     public static int contador_frag= 0;
     public static int contador_frag_ruta = 0;
+    public static int contador_adicional = 0;
 
 
     /**
@@ -57,11 +58,11 @@ public class SimulatorTest {
          * 
          */
 
-
+ 
         input.setDemands(100000);
         input.setTopologies(new ArrayList<>());
-        input.getTopologies().add(TopologiesEnum.NSFNET);
-        //input.getTopologies().add(TopologiesEnum.USNET);
+        //input.getTopologies().add(TopologiesEnum.NSFNET);
+        input.getTopologies().add(TopologiesEnum.USNET);
         //input.getTopologies().add(TopologiesEnum.JPNNET);
         input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
@@ -77,12 +78,12 @@ public class SimulatorTest {
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
+        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
         //input.setNumero_h("h1");
-        //input.setNumero_h("h2");
-        input.setNumero_h("h3");
+        input.setNumero_h("h2");
+        //input.setNumero_h("h3");
 
         return input;
     }
@@ -96,9 +97,9 @@ public class SimulatorTest {
         try {
             //Bases de datos
             //createTable();
-            CreateDataBase();
+            //CreateDataBase();
             // Datos de entrada
-            for (int erlang = 2000; erlang <= 2000; erlang = erlang + 1000) {
+            for (int erlang = 2500; erlang <= 2500; erlang = erlang + 2500) {
                
                 Input input = new SimulatorTest().getTestingInput(erlang);
                 for (TopologiesEnum topology : input.getTopologies()) {
@@ -232,7 +233,7 @@ public class SimulatorTest {
                             if(erlang<1000){
                                 tipo_erlang = "BAJO";
                             }
-                            else if( erlang>1000 && erlang< 2000){
+                            else if( erlang>=1000 && erlang< 2000){
                                 tipo_erlang = "MEDIO";
                             }
                             else{
@@ -244,12 +245,12 @@ public class SimulatorTest {
 
                             String motivo_bloqueo = MotivoBloqueo(contador_frag, contador_crosstalk);
 
-                            String porcentaje = PorcentajeBloqueo(bloqueos, contador_frag, contador_crosstalk);
+                            String porcentaje_motivo = PorcentajeMotivo(bloqueos, contador_frag, contador_crosstalk);
 
-                        
+                            String porcentaje = PorcentajeBloqueo(demandaNumero,bloqueos);
                                 
 
-                            //InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado);
+                            InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado);
                             
                             System.out.println("---------------------------------");
                             System.out.println("\nTopologia" + input.getTopologies()+"\n");
@@ -258,7 +259,7 @@ public class SimulatorTest {
                             System.out.println("Cantidad de demandas: " + demandaNumero);
                             System.out.println("\nRESUMEN DE DATOS \n");
                             System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n",k1,k2,k3,k4,k5);
-                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d",contador_frag,contador_crosstalk,contador_frag_ruta);
+                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d \n Ambos motivos crean el bloqueo por igual manera = %d",contador_frag,contador_crosstalk,contador_frag_ruta,contador_adicional);
                             System.out.printf("\nEl diametro del grafo es :  %d kms\n",Diametro);
                             System.out.printf("\nEl grado promedio: %d",prom_grado);
                             System.out.printf("\n entra en crosstalk %d",SimulatorTest.contador_crosstalk);
@@ -285,11 +286,14 @@ public class SimulatorTest {
 
         String motivo_bloqueo;
 
-        if(contador1 > contador2){
+        if(contador1 >0 && contador2 == 0){
             motivo_bloqueo = "Fragmentacion";
         }
-        else if (contador1 < contador2){
+        else if (contador1 == 0 && contador2>0){
             motivo_bloqueo = "Crosstalk";
+        }
+        else if ( contador1 == 0 && contador2== 0){
+            motivo_bloqueo = " ";
         }
         else{
             motivo_bloqueo = "Crosstalk y Fragmentacion";
@@ -310,7 +314,7 @@ public class SimulatorTest {
      * 
      */
 
-    public static String  PorcentajeBloqueo(int bloqueos,int contador1, int contador2 ){
+    public static String  PorcentajeMotivo(int bloqueos,int contador1, int contador2 ){
 
         String porcentaje = "";
         float p_frag,p_crosstalk;
@@ -330,6 +334,13 @@ public class SimulatorTest {
         return porcentaje;
 
     }
+
+    public static String PorcentajeBloqueo(int demandas, int bloqueos) {
+    
+        double porcentaje = (double) bloqueos * 100 / demandas;
+        return String.format("%.2f%%", porcentaje);
+    }
+
 
     /**
      * Inserta los datos en la BD
@@ -441,15 +452,16 @@ public class SimulatorTest {
                     + "valor_h tiempo TEXT NOT NULL, "
                     + "bloqueos TEXT NOT NULL, "
                     + "motivo_Bloqueo TEXT NOT NULL, "
+                    + "porcentaje_motivo TEXT NOT NULL, "
                     + "porcentaje_Bloqueo TEXT NOT NULL, "
                     + "rutas TEXT NOT NULL, "
                     + "diametro TEXT NOT NULL, "
                     + "grado TEXT NOT NULL) ";
-            /*try {
-                stmt.executeUpdate(dropTable);
-            }catch (SQLException ex) {
-                System.out.println(ex.getMessage());
-            }*/
+            //try {
+            //    stmt.executeUpdate(dropTable);
+            //}catch (SQLException ex) {
+            //    System.out.println(ex.getMessage());
+            //}
             stmt.executeUpdate(sql);
             stmt.close();
             conexion.close();
@@ -467,7 +479,7 @@ public class SimulatorTest {
      */
 
     public static void InsertaDatos(String topologia, String erlang, String tipo_erlang, String h, String valor_h,
-                                    String bloqueos, String motivo_Bloqueo, String porcentaje_Bloqueo,
+                                    String bloqueos, String motivo_Bloqueo, String porcentaje_motivo, String porcentaje_Bloqueo,
                                     String rutas, String diametro, String grado) {
         Connection conexion = null;
         PreparedStatement stmt = null;
@@ -483,8 +495,8 @@ public class SimulatorTest {
             conexion.setAutoCommit(false);
 
             // Consulta SQL con placeholders (?) para evitar errores de sintaxis e inyección SQL
-            String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, motivo_Bloqueo, porcentaje_Bloqueo, rutas, diametro, grado) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, motivo_Bloqueo, porcentaje_motivo,porcentaje_Bloqueo, rutas, diametro, grado) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)";
 
             // Crear el PreparedStatement y asignar valores
             stmt = conexion.prepareStatement(sql);
@@ -495,10 +507,11 @@ public class SimulatorTest {
             stmt.setString(5, valor_h);
             stmt.setString(6, bloqueos);
             stmt.setString(7, motivo_Bloqueo);
-            stmt.setString(8, porcentaje_Bloqueo);
-            stmt.setString(9, rutas);
-            stmt.setString(10, diametro);
-            stmt.setString(11, grado);
+            stmt.setString(8, porcentaje_motivo);
+            stmt.setString(9, porcentaje_Bloqueo);
+            stmt.setString(10, rutas);
+            stmt.setString(11, diametro);
+            stmt.setString(12, grado);
 
             // Ejecutar la inserción
             stmt.executeUpdate();
