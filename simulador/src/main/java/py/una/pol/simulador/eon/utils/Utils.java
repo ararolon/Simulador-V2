@@ -43,7 +43,7 @@ public class Utils {
      * @throws IllegalArgumentException Parámetros no válidos
      */
     public static Graph<Integer, Link> createTopology(TopologiesEnum topology, int numberOfCores,
-            BigDecimal fsWidth, Integer capacity)
+            BigDecimal fsWidth, Integer capacity,double factor, String h)
             throws IOException, IllegalArgumentException {
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -59,6 +59,17 @@ public class Utils {
             for (int i = 0; i < node.get("connections").size(); i++) {
                 int connection = node.get("connections").get(i).intValue();
                 int distance = node.get("distance").get(i).intValue();
+                // agrego el factor F que multiplique a las distancias de los enlaces
+               
+                //dependiendo del valor de h cambia para que aumente o disminuya 
+
+                if ( h == "h3"){
+                    distance = (int) Math.ceil(distance * factor);
+                }
+                else{
+                    distance = (int) Math.ceil(distance/factor);
+                }
+
                 List<Core> cores = new ArrayList<>();
 
                 for (int j = 0; j < numberOfCores; j++) {

@@ -32,3 +32,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+##database##
+*.db
+**/*.db
+
+##imagenes##
+*.png
+

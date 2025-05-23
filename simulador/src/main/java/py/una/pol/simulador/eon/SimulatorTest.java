@@ -41,8 +41,7 @@ public class SimulatorTest {
     public static int contador_crosstalk = 0;
     public static int contador_frag= 0;
     public static int contador_frag_ruta = 0;
-    public static int contador_adicional = 0;
-
+    
 
     /**
      * Configuración inicial para el simulador
@@ -62,8 +61,8 @@ public class SimulatorTest {
         input.setDemands(100000);
         input.setTopologies(new ArrayList<>());
         //input.getTopologies().add(TopologiesEnum.NSFNET);
-        input.getTopologies().add(TopologiesEnum.USNET);
-        //input.getTopologies().add(TopologiesEnum.JPNNET);
+        //input.getTopologies().add(TopologiesEnum.USNET);
+        input.getTopologies().add(TopologiesEnum.JPNNET);
         input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
         input.setFsRangeMin(2);
@@ -78,12 +77,13 @@ public class SimulatorTest {
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
         //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
         input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
-        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
+        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
         //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
-        //input.setNumero_h("h1");
-        input.setNumero_h("h2");
+        input.setNumero_h("h1");
+        //input.setNumero_h("h2");
         //input.setNumero_h("h3");
+        input.setF(50.5);
 
         return input;
     }
@@ -99,16 +99,23 @@ public class SimulatorTest {
             //createTable();
             //CreateDataBase();
             // Datos de entrada
-            for (int erlang = 2500; erlang <= 2500; erlang = erlang + 2500) {
+            for (int erlang = 2000; erlang <= 2000; erlang = erlang + 2000) {
                
                 Input input = new SimulatorTest().getTestingInput(erlang);
                 for (TopologiesEnum topology : input.getTopologies()) {
 
                     // Se genera la red de acuerdo a los datos de entrada
                     Graph<Integer, Link> graph = Utils.createTopology(topology,
-                            input.getCores(), input.getFsWidth(), input.getCapacity());
+                            input.getCores(), input.getFsWidth(), input.getCapacity(),input.getF(),input.getNumero_h());
 
                     GraphUtils.createImage(graph, topology.label());
+                   
+                    // obtengo la longitud promedio del grafo
+
+                    String longitud_promedio = calcularLongitudPromedioAristas(graph);
+
+
+
                     // Contador de demandas utilizado para identificación
                     Integer demandsQ = 1;
                     List<List<Demand>> listaDemandas = new ArrayList<>();
@@ -125,7 +132,7 @@ public class SimulatorTest {
                     for (Double crosstalkPerUnitLength : input.getCrosstalkPerUnitLenghtList()) {
                         for (RSAEnum algorithm : input.getAlgorithms()) {
                             graph = Utils.createTopology(topology,
-                                    input.getCores(), input.getFsWidth(), input.getCapacity());
+                                    input.getCores(), input.getFsWidth(), input.getCapacity(), input.getF(),input.getNumero_h());
                             // Lista de rutas establecidas durante la simulación
                             List<EstablishedRoute> establishedRoutes = new ArrayList<>();
                             System.out.println("Inicializando simulación del RSA " + algorithm.label() + " para erlang: " + (erlang) + " para la topología " + topology.label() + " y H = " + crosstalkPerUnitLength.toString());
@@ -250,7 +257,8 @@ public class SimulatorTest {
                             String porcentaje = PorcentajeBloqueo(demandaNumero,bloqueos);
                                 
 
-                            InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado);
+                            InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
+                             "" + longitud_promedio, "" + String.valueOf(input.getF()));
                             
                             System.out.println("---------------------------------");
                             System.out.println("\nTopologia" + input.getTopologies()+"\n");
@@ -259,7 +267,7 @@ public class SimulatorTest {
                             System.out.println("Cantidad de demandas: " + demandaNumero);
                             System.out.println("\nRESUMEN DE DATOS \n");
                             System.out.printf("Resumen de caminos:\nk1:%d\nk2:%d\nk3:%d\nk4:%d\nk5:%d\n",k1,k2,k3,k4,k5);
-                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d \n Ambos motivos crean el bloqueo por igual manera = %d",contador_frag,contador_crosstalk,contador_frag_ruta,contador_adicional);
+                            System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n",contador_frag,contador_crosstalk,contador_frag_ruta);
                             System.out.printf("\nEl diametro del grafo es :  %d kms\n",Diametro);
                             System.out.printf("\nEl grado promedio: %d",prom_grado);
                             System.out.printf("\n entra en crosstalk %d",SimulatorTest.contador_crosstalk);
@@ -305,7 +313,7 @@ public class SimulatorTest {
 
    
     /***
-     * Funcion que devuelve el porcentaje de bloqueo de la red respecto al motivo de bloqueo
+     * Funcion que devuelve el motivo de bloqueo 
      * @param  bloqueos Cantidad de bloqueos de la red
      * @param contador1 Cantidad de bloqueos por fragmentacion en la red
      * @param contador2 Cantidad de bloqueos por crosstalk en la red
@@ -335,12 +343,44 @@ public class SimulatorTest {
 
     }
 
+    /***
+     * Funcion que devuelve el porcentaje de bloqueo de la red 
+     * @param  demandas cantidad de demandas de la red
+     * @param bloqueos porcentaje de bloqueos de la red
+     * @return  el porcentaje de bloqueo.
+     * 
+     */
+
+
     public static String PorcentajeBloqueo(int demandas, int bloqueos) {
     
         double porcentaje = (double) bloqueos * 100 / demandas;
         return String.format("%.2f%%", porcentaje);
     }
 
+    /***
+     * Funcion que devuelve la longitud media del grafo 
+     * @param  g es el grafo utilizado como red
+     * @return  longitud media del grafo
+     * 
+     */
+
+     public static String calcularLongitudPromedioAristas(Graph<Integer, Link> grafo) {
+        if (grafo.edgeSet().isEmpty()) {
+            return "0.00";
+        }
+    
+        double sumaTotal = 0.0;
+    
+        for (Link arista : grafo.edgeSet()) {
+            sumaTotal += grafo.getEdgeWeight(arista);
+        }
+    
+        double promedio = sumaTotal / grafo.edgeSet().size();
+    
+        // Formatear a 2 decimales como String
+        return String.format("%.2f", promedio);
+    }
 
     /**
      * Inserta los datos en la BD
@@ -456,7 +496,9 @@ public class SimulatorTest {
                     + "porcentaje_Bloqueo TEXT NOT NULL, "
                     + "rutas TEXT NOT NULL, "
                     + "diametro TEXT NOT NULL, "
-                    + "grado TEXT NOT NULL) ";
+                    + "grado TEXT NOT NULL, "
+                    + "long_promedio TEXT NOT NULL,"
+                    + "factor TEXT NOT NULL) ";
             //try {
             //    stmt.executeUpdate(dropTable);
             //}catch (SQLException ex) {
@@ -480,7 +522,7 @@ public class SimulatorTest {
 
     public static void InsertaDatos(String topologia, String erlang, String tipo_erlang, String h, String valor_h,
                                     String bloqueos, String motivo_Bloqueo, String porcentaje_motivo, String porcentaje_Bloqueo,
-                                    String rutas, String diametro, String grado) {
+                                    String rutas, String diametro, String grado,String long_promedio, String factor) {
         Connection conexion = null;
         PreparedStatement stmt = null;
 
@@ -495,8 +537,8 @@ public class SimulatorTest {
             conexion.setAutoCommit(false);
 
             // Consulta SQL con placeholders (?) para evitar errores de sintaxis e inyección SQL
-            String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, motivo_Bloqueo, porcentaje_motivo,porcentaje_Bloqueo, rutas, diametro, grado) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)";
+            String sql = "INSERT INTO Resumen (topologia, erlang, tipo_erlang, h, valor_h, bloqueos, motivo_Bloqueo, porcentaje_motivo,porcentaje_Bloqueo, rutas, diametro, grado, long_promedio, factor) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?, ?, ?)";
 
             // Crear el PreparedStatement y asignar valores
             stmt = conexion.prepareStatement(sql);
@@ -512,6 +554,8 @@ public class SimulatorTest {
             stmt.setString(10, rutas);
             stmt.setString(11, diametro);
             stmt.setString(12, grado);
+            stmt.setString(13,long_promedio);
+            stmt.setString(14,factor);
 
             // Ejecutar la inserción
             stmt.executeUpdate();

@@ -55,8 +55,6 @@ public class Algorithms {
         Boolean flag_crosstalk =false;
         Boolean flag_frag = false;
         Boolean flag_capacidad = false;
-        int contador1=0, contador2=0;
-        int contador3 = 0 ; //contador adicional
         //variable auxiliar para hallar el diametro del camino
         Integer D = 0;
 
@@ -69,10 +67,7 @@ public class Algorithms {
         KShortestSimplePaths<Integer, Link> kspFinder = new KShortestSimplePaths<>(graph);
         List<GraphPath<Integer, Link>> kspaths = kspFinder.getPaths(demand.getSource(), demand.getDestination(), 5);
         while (k < kspaths.size() && kspaths.get(k) != null) {
-            contador1= 0;
-            contador2 = 0;
-            contador3 = 0 ;
-
+            
             fsIndexBegin = null;
             GraphPath<Integer, Link> ksp = kspaths.get(k);
             // Recorremos los FS
@@ -95,10 +90,10 @@ public class Algorithms {
                     crosstalkFSList.add(BigDecimal.ZERO);
                 } 
                 D = 0; // se setea el valor por cada camino K recorrido hasta encontrar la ruta candidata.
-                for (Link link : ksp.getEdgeList()) {
+                for (Link link : ksp.getEdgeList()) { 
                     for (int core = 0; core < cores; core++) {
-                        flag_crosstalk =false;
-                        flag_frag = false;
+                        //flag_crosstalk =false;
+                        //flag_frag = false;
                         flag_capacidad = false;
                         if (i < capacity - demand.getFs()) {
                             List<FrequencySlot> bloqueFS = link.getCores().get(core).getFrequencySlots().subList(i, i + demand.getFs());
@@ -151,25 +146,20 @@ public class Algorithms {
                                                             
         
                                                         }
-                                                        
-        
-        
-                                                        
+                                                                                                                       
                                                     }else{
                                                         
                                                         flag_crosstalk = true;
-                                                        contador2++;
+                                                        
         
                                                     }
                                                 }else{
                                                         
-                                                    flag_crosstalk = true;
-                                                    contador2++;
+                                                    flag_crosstalk = true;                                              
 
                                                 }
                                             }
                                             else{
-                                                contador3++;
                                                 break;
                                             }
                                                 
@@ -177,28 +167,23 @@ public class Algorithms {
                                         }
                                         else{
                                             flag_crosstalk = true;
-                                            contador2++;
                                         }
                                         
                               
                                     }
                                     else{
                                         flag_crosstalk = true;
-                                        contador2++;
                                   
                                     }
                                 }
                                 else{
-                                    flag_crosstalk = true;
-                                    contador2++;
-                                    
+                                    flag_crosstalk = true;      
                                 }
 
                             }
                             else{
                                 flag_frag = true;
-                                contador1++;
-                                //SimulatorTest.contador_frag ++;
+                         
                             }
                         }
                     }
@@ -230,26 +215,14 @@ public class Algorithms {
                //es por no completar la cantidad de enlaces para una ruta candidata.
                SimulatorTest.contador_frag_ruta++;
            }
-           if(contador1>contador2){
-            SimulatorTest.contador_frag++;
-            contador1 =0;
-            
-           }
-           else if(contador1<contador2){
-            SimulatorTest.contador_crosstalk++;
-            contador2=0;
-           }
-           else {
-             // cuando tanto el bloqueo como la fragmentacion crean el bloqueo
-             SimulatorTest.contador_adicional++;
-           }
-
-           if(flag_crosstalk == true){
-               //SimulatorTest.contador_crosstalk++;
+           // si en algun momento se hubo bloqueo por crosstalk , entonces el bloqueo es por crosstalk
+           if(flag_crosstalk == true ){
+               SimulatorTest.contador_crosstalk++;
            }
       
-           if(flag_frag == true){
-               //SimulatorTest.contador_frag++;
+           // si hubo bloqueo pero no fue en ningun momento por crosstalk , entonces es por fragmentacion
+           if(flag_frag == true && flag_crosstalk == false){
+               SimulatorTest.contador_frag++;
            }
 
 
