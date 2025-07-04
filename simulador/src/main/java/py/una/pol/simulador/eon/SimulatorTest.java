@@ -27,6 +27,7 @@ import py.una.pol.simulador.eon.rsa.Algorithms;
 import py.una.pol.simulador.eon.utils.MathUtils;
 import py.una.pol.simulador.eon.utils.Utils;
 import py.una.pol.simulador.eon.utils.GraphUtils;
+import java.util.Scanner;
 
 /**
  *
@@ -57,12 +58,80 @@ public class SimulatorTest {
          * 
          */
 
+        Scanner scanner = new Scanner(System.in);
+        boolean valid = false;
+
+        // se ingresa la topologia
+        input.setTopologies(new ArrayList<>());
+        while (!valid) {
+            System.out.println("Ingrese el nombre de la topología (NSFNET, USNET, JPNNET):");
+            String userInput = scanner.nextLine().trim().toUpperCase();
+
+            try {
+ 
+                TopologiesEnum selectedTopology = TopologiesEnum.valueOf(userInput);
+                input.getTopologies().add(selectedTopology);
+                System.out.println("Topología agregada: " + selectedTopology);
+                valid = true;
+
+            } catch (IllegalArgumentException e) {
+                // Si no es válido, muestra mensaje y vuelve a pedir
+                System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: NSFNET, USNET, JPNNET.\n");
+            }
+        }
+        
+        valid = false;
+
+        // se ingresa el crosstalk por unidad de longitud
+        input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
+        while (!valid) {
+            System.out.println("Ingrese el tipo de crosstak por unidad de longitud (h1,h2 o h3)");
+            String userInput = scanner.nextLine().trim().toUpperCase();
+
+            
+ 
+            if(userInput.equals("h3") || userInput.equals("H3")){
+                input.setNumero_h("h3");
+                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
+                valid = true;
+            }
+            else if (userInput.equals("h2") || userInput.equals("H2") ){
+                input.setNumero_h("h2");
+                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
+                valid = true;
+            }
+            else if (userInput.equals("h1") || userInput.equals("H1") ){
+                input.setNumero_h("h1");
+                input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
+                valid = true;
+            }
+            else {
+             System.out.println("Entrada inválida. Por favor, ingrese una de las siguientes opciones: h1, h2, h3.\n");
+
+            }
+        }
+ 
+        // se ingresa el factor 
+        valid = false;
+
+       while (!valid) {
+            System.out.print("Ingrese un número decimal (por ejemplo 2.0): ");
+            String entrada = scanner.nextLine().trim();
+
+            try {
+                double valor = Double.parseDouble(entrada); // Intenta convertir la entrada a double
+                valid = true;
+                input.setF(valor);
+                System.out.println("Valor ingresado correctamente: " + valor);
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
+            }
+        }
+
+        scanner.close();
+                
  
         input.setDemands(100000);
-        input.setTopologies(new ArrayList<>());
-        //input.getTopologies().add(TopologiesEnum.NSFNET);
-        //input.getTopologies().add(TopologiesEnum.USNET);
-        input.getTopologies().add(TopologiesEnum.JPNNET);
         input.setFsWidth(new BigDecimal("12.5"));
         input.setFsRangeMax(8);
         input.setFsRangeMin(2);
@@ -75,17 +144,39 @@ public class SimulatorTest {
         input.getAlgorithms().add(RSAEnum.MULTIPLES_CORES);
         input.setSimulationTime(MathUtils.getSimulationTime(input.getDemands(), input.getLambda()));
         input.setMaxCrosstalk(new BigDecimal("0.003162277660168379331998893544")); // XT = -25 dB
-        //input.setMaxCrosstalk(new BigDecimal("0.031622776601683793319988935444")); // XT = -15 dB
-        input.setCrosstalkPerUnitLenghtList(new ArrayList<>());
-        input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0035, 2) * 0.080) / (4000000 * 0.000045));
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.00040, 2) * 0.050) / (4000000 * 0.000040));
-        //input.getCrosstalkPerUnitLenghtList().add((2 * Math.pow(0.0000316, 2) * 0.055) / (4000000 * 0.000045));
-        input.setNumero_h("h1");
-        //input.setNumero_h("h2");
-        //input.setNumero_h("h3");
-        input.setF(50.5);
+        
 
         return input;
+    }
+
+
+    /**
+     * Obtiene el valor para el erlang
+     */
+
+    public static int Obtiene_Erlang(){
+
+        boolean valid = false;
+        Scanner scanner = new Scanner(System.in);
+        int valor = 0;
+
+        while(!valid){
+
+            System.out.println( "Ingrese el valor para el erlang: ");
+            String entrada = scanner.nextLine().trim();
+
+            try {
+                valor = Integer.parseInt(entrada); // Intenta convertir la entrada a double
+                valid = true;
+                System.out.println("Valor ingresado correctamente: " + valor);
+
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Por favor, ingrese un número válido.\n");
+            }
+        }
+
+        return valor;
+
     }
 
     /**
@@ -99,7 +190,10 @@ public class SimulatorTest {
             //createTable();
             //CreateDataBase();
             // Datos de entrada
-            for (int erlang = 2000; erlang <= 2000; erlang = erlang + 2000) {
+
+            int valor_erlang = Obtiene_Erlang();
+
+            for (int erlang = valor_erlang   ; erlang <= valor_erlang; erlang = erlang + valor_erlang) {
                
                 Input input = new SimulatorTest().getTestingInput(erlang);
                 for (TopologiesEnum topology : input.getTopologies()) {
@@ -235,19 +329,6 @@ public class SimulatorTest {
 
                             //Determina los datos para ingresar a la base de datos
 
-                            String tipo_erlang;
-
-                            if(erlang<1000){
-                                tipo_erlang = "BAJO";
-                            }
-                            else if( erlang>=1000 && erlang< 2000){
-                                tipo_erlang = "MEDIO";
-                            }
-                            else{
-                                tipo_erlang = "ALTO";
-
-                            }
-
                             // los motivos de bloqueos
 
                             String motivo_bloqueo = MotivoBloqueo(contador_frag, contador_crosstalk);
@@ -255,7 +336,8 @@ public class SimulatorTest {
                             String porcentaje_motivo = PorcentajeMotivo(bloqueos, contador_frag, contador_crosstalk);
 
                             String porcentaje = PorcentajeBloqueo(demandaNumero,bloqueos);
-                                
+
+                            String tipo_erlang = TipoErlang(porcentaje); 
 
                             InsertaDatos(topology.label(), "" + erlang, tipo_erlang, input.getNumero_h(), crosstalkPerUnitLength.toString(), "" + bloqueos, motivo_bloqueo, porcentaje_motivo, porcentaje, "" + rutas, "" + Diametro, "" + prom_grado,
                              "" + longitud_promedio, "" + String.valueOf(input.getF()));
@@ -270,7 +352,6 @@ public class SimulatorTest {
                             System.out.printf("Resumen de bloqueos:\n fragmentacion = %d \n crosstalk = %d\n fragmentacion de camino = %d\n",contador_frag,contador_crosstalk,contador_frag_ruta);
                             System.out.printf("\nEl diametro del grafo es :  %d kms\n",Diametro);
                             System.out.printf("\nEl grado promedio: %d",prom_grado);
-                            System.out.printf("\n entra en crosstalk %d",SimulatorTest.contador_crosstalk);
                             System.out.println(System.lineSeparator());
                         }
                     }
@@ -335,7 +416,7 @@ public class SimulatorTest {
         p_frag = (contador1*100)/bloqueos;
         p_crosstalk = (contador2*100)/bloqueos;
 
-        porcentaje = "" + p_frag + " fragmentacion "+ " y " + p_crosstalk + "crosstalk";
+        porcentaje = "" + p_frag + " fragmentacion "+ " y " + p_crosstalk + " crosstalk";
 
         }
 
@@ -356,6 +437,29 @@ public class SimulatorTest {
     
         double porcentaje = (double) bloqueos * 100 / demandas;
         return String.format("%.2f%%", porcentaje);
+    }
+
+
+   public static String TipoErlang( String porcentaje){
+
+        String tipo_erlang;
+        
+          porcentaje = porcentaje.replace(",", ".")
+                               .replace("%", "")
+                               .trim();
+        Double valor =  Double.parseDouble(porcentaje);
+
+        if(valor <= 1.5){
+            tipo_erlang = "BAJO";
+        }
+        else if( valor <= 5.5){
+            tipo_erlang = "MEDIO";
+        }
+        else{
+            tipo_erlang = "ALTO";
+        }
+       
+        return tipo_erlang;
     }
 
     /***
@@ -480,7 +584,7 @@ public class SimulatorTest {
 
             stmt = conexion.createStatement();
 
-            //String dropTable = "DROP TABLE Resumen ";
+            String dropTable = "DROP TABLE Resumen ";
 
 
             String sql = "CREATE TABLE IF NOT EXISTS Resumen "
@@ -499,11 +603,11 @@ public class SimulatorTest {
                     + "grado TEXT NOT NULL, "
                     + "long_promedio TEXT NOT NULL,"
                     + "factor TEXT NOT NULL) ";
-            //try {
-            //    stmt.executeUpdate(dropTable);
-            //}catch (SQLException ex) {
-            //    System.out.println(ex.getMessage());
-            //}
+            try {
+               stmt.executeUpdate(dropTable);
+            }catch (SQLException ex) {
+                System.out.println(ex.getMessage());
+            }
             stmt.executeUpdate(sql);
             stmt.close();
             conexion.close();

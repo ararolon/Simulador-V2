@@ -81,4 +81,6 @@ public class Input {
     /*Variable para indicar el el factor por el cual va a multiplicarse o dividirse las distancias */
 
     private double  F;
+
+
 }
