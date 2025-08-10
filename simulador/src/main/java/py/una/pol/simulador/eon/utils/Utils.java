@@ -63,7 +63,7 @@ public class Utils {
                
                 //dependiendo del valor de h cambia para que aumente o disminuya 
 
-                if ( h == "h3"){
+                if ( "h3".equals(h)){
                     distance = (int) Math.ceil(distance * factor);
                 }
                 else{

@@ -22,7 +22,11 @@ public enum TopologiesEnum {
     /**
      * Topología JPNNET
      */
-    JPNNET("JPNNET", "topologies/jpn-net.json");
+    JPNNET("JPNNET", "topologies/jpn-net.json"),
+    /*
+     * Topologia de prueba Cuadrado homogeneo
+     */
+    CUADRADO("CUADRADO", "topologies/cuadrado.json");
 
     private final String label;
 
